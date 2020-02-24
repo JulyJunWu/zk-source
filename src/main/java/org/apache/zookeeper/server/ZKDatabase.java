@@ -63,6 +63,8 @@ public class ZKDatabase {
     /**
      * make sure on a clear you take care of 
      * all these members.
+     *
+     * 保存节点的数据和 监听器
      */
     protected DataTree dataTree;
     protected ConcurrentHashMap<Long, Integer> sessionsWithTimeouts;

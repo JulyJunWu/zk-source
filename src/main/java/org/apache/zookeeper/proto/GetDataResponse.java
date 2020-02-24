@@ -21,6 +21,9 @@ package org.apache.zookeeper.proto;
 
 import org.apache.jute.*;
 import org.apache.yetus.audience.InterfaceAudience;
+
+import java.nio.charset.Charset;
+
 @InterfaceAudience.Public
 public class GetDataResponse implements Record {
   private byte[] data;
@@ -74,6 +77,15 @@ public class GetDataResponse implements Record {
     }
     return "ERROR";
   }
+
+  /**
+   * 自定义
+   * @return
+   */
+  public String customToString(){
+    return new String(data, Charset.defaultCharset());
+  }
+
   public void write(java.io.DataOutput out) throws java.io.IOException {
     BinaryOutputArchive archive = new BinaryOutputArchive(out);
     serialize(archive, "");

@@ -114,6 +114,9 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
     protected RequestProcessor firstProcessor;
     protected volatile State state = State.INITIAL;
 
+    /**
+     * 服务器运行的状态
+     */
     protected enum State {
         INITIAL, RUNNING, SHUTDOWN, ERROR;
     }
@@ -398,7 +401,12 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
             jmxServerBean = null;
         }
     }
-    
+
+    /**
+     * 加载磁盘数据到内存
+     * @throws IOException
+     * @throws InterruptedException
+     */
     public void startdata() 
     throws IOException, InterruptedException {
         //check to see if zkDb is not null
@@ -416,10 +424,10 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         }
         // 启动session过期检查线程
         startSessionTracker();
+        //设置和启动Processor
         setupRequestProcessors();
-
         registerJMX();
-
+        // 设置服务器运行中
         setState(State.RUNNING);
         notifyAll();
     }
@@ -428,8 +436,10 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         RequestProcessor finalProcessor = new FinalRequestProcessor(this);
         RequestProcessor syncProcessor = new SyncRequestProcessor(this,
                 finalProcessor);
+        // 也是一个线程
         ((SyncRequestProcessor)syncProcessor).start();
         firstProcessor = new PrepRequestProcessor(this, syncProcessor);
+        // 启动请求处理线程,维护一个请求队列,处理请求命令
         ((PrepRequestProcessor)firstProcessor).start();
     }
 
@@ -618,6 +628,9 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
                 && Arrays.equals(passwd, generatePasswd(sessionId));
     }
 
+    /**
+     * 创建session
+     */
     long createSession(ServerCnxn cnxn, byte passwd[], int timeout) {
         long sessionId = sessionTracker.createSession(timeout);
         Random r = new Random(sessionId ^ superSecret);
@@ -888,6 +901,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
     }
     
     public void processConnectRequest(ServerCnxn cnxn, ByteBuffer incomingBuffer) throws IOException {
+        // 解码
         BinaryInputArchive bia = BinaryInputArchive.getArchive(new ByteBufferInputStream(incomingBuffer));
         ConnectRequest connReq = new ConnectRequest();
         connReq.deserialize(bia, "connect");

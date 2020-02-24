@@ -357,6 +357,9 @@ public abstract class ServerCnxn implements Stats, Watcher {
         }
     }
 
+    /**
+     * 自增 发送的数据包的次数
+     */
     protected void packetSent() {
         incrPacketsSent();
         ServerStats serverStats = serverStats();
@@ -370,6 +373,9 @@ public abstract class ServerCnxn implements Stats, Watcher {
     protected final Date established = new Date();
 
     protected final AtomicLong packetsReceived = new AtomicLong();
+    /**
+     * 发送数据包的次数
+     */
     protected final AtomicLong packetsSent = new AtomicLong();
 
     protected long minLatency;

@@ -35,6 +35,9 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 接受请求/处理转发请求
+ */
 public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(NIOServerCnxnFactory.class);
 
@@ -125,7 +128,9 @@ public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable 
         start();
         //
         setZooKeeperServer(zks);
+        // 加载磁盘数据到内存中
         zks.startdata();
+        //
         zks.startup();
     }
 

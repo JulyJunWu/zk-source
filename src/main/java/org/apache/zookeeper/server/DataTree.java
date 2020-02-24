@@ -75,12 +75,20 @@ public class DataTree {
     /**
      * This hashtable provides a fast lookup to the datanodes. The tree is the
      * source of truth and is where all the locking occurs
+     *
+     * 保存所有的节点数据
+     * k: 路径
+     * v: 所有信息
      */
     private final ConcurrentHashMap<String, DataNode> nodes =
         new ConcurrentHashMap<String, DataNode>();
-
+    /**
+     * 保存对数据的监听信息
+     */
     private final WatchManager dataWatches = new WatchManager();
-
+    /**
+     * 保存对子节点变化的监听信息
+     */
     private final WatchManager childWatches = new WatchManager();
 
     /** the root of zookeeper tree */
@@ -211,6 +219,8 @@ public class DataTree {
 
     public DataTree() {
         /* Rather than fight it, let root have an alias */
+
+        //"" 和 "/" 都是根节点
         nodes.put("", root);
         nodes.put(rootZookeeper, root);
 
@@ -367,12 +377,13 @@ public class DataTree {
             long ephemeralOwner, int parentCVersion, long zxid, long time)
             throws KeeperException.NoNodeException,
             KeeperException.NodeExistsException {
+        LOG.info("createNode | 路径[{}] | 数据[{}] | 线程[{}]",path,new String(data),Thread.currentThread().getName());
         int lastSlash = path.lastIndexOf('/');
         String parentName = path.substring(0, lastSlash);
         String childName = path.substring(lastSlash + 1);
         StatPersisted stat = new StatPersisted();
-        stat.setCtime(time);
         stat.setMtime(time);
+        stat.setCtime(time);
         stat.setCzxid(zxid);
         stat.setMzxid(zxid);
         stat.setPzxid(zxid);
@@ -430,7 +441,9 @@ public class DataTree {
             updateCount(lastPrefix, 1);
             updateBytes(lastPrefix, data == null ? 0 : data.length);
         }
+        //触发数据变动 监听
         dataWatches.triggerWatch(path, Event.EventType.NodeCreated);
+        //触发子节点变动监听
         childWatches.triggerWatch(parentName.equals("") ? "/" : parentName,
                 Event.EventType.NodeChildrenChanged);
         return path;
@@ -447,6 +460,7 @@ public class DataTree {
      */
     public void deleteNode(String path, long zxid)
             throws KeeperException.NoNodeException {
+        LOG.info("deleteNode | 路径[{}] | 线程[{}]",path,Thread.currentThread().getName());
         int lastSlash = path.lastIndexOf('/');
         String parentName = path.substring(0, lastSlash);
         String childName = path.substring(lastSlash + 1);
@@ -511,6 +525,7 @@ public class DataTree {
 
     public Stat setData(String path, byte data[], int version, long zxid,
             long time) throws KeeperException.NoNodeException {
+        LOG.info("setData | 路径[{}] | 数据[{}] | 线程[{}] | version[{}]",path,new String(data),Thread.currentThread().getName(),version);
         Stat s = new Stat();
         DataNode n = nodes.get(path);
         if (n == null) {
@@ -531,6 +546,7 @@ public class DataTree {
           this.updateBytes(lastPrefix, (data == null ? 0 : data.length)
               - (lastdata == null ? 0 : lastdata.length));
         }
+        //触发数据变动监听
         dataWatches.triggerWatch(path, EventType.NodeDataChanged);
         return s;
     }
@@ -555,15 +571,21 @@ public class DataTree {
         }
     }
 
+    /**
+     *  根据路径获取节点数据
+     */
     public byte[] getData(String path, Stat stat, Watcher watcher)
             throws KeeperException.NoNodeException {
         DataNode n = nodes.get(path);
         if (n == null) {
             throw new KeeperException.NoNodeException();
         }
+        LOG.info("getData | 路径[{}] | 数据[{}] | 线程[{}]",path,new String(n.data),Thread.currentThread().getName());
         synchronized (n) {
+            //对象属性拷贝
             n.copyStat(stat);
             if (watcher != null) {
+                // 添加一个监听
                 dataWatches.addWatch(path, watcher);
             }
             return n.data;

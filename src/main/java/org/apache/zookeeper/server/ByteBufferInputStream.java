@@ -72,6 +72,9 @@ public class ByteBufferInputStream extends InputStream {
         return n;
     }
 
+    /**
+     * 字节转成 对应的对象数据
+     */
     static public void byteBuffer2Record(ByteBuffer bb, Record record)
             throws IOException {
         BinaryInputArchive ia;

@@ -92,11 +92,15 @@ public class WatchManager {
         return triggerWatch(path, type, null);
     }
 
+    /**
+     * 触发监听
+     */
     public Set<Watcher> triggerWatch(String path, EventType type, Set<Watcher> supress) {
         WatchedEvent e = new WatchedEvent(type,
                 KeeperState.SyncConnected, path);
         HashSet<Watcher> watchers;
         synchronized (this) {
+            // 这就是为什么zk监听只触发一次原因,源码就这样写的
             watchers = watchTable.remove(path);
             if (watchers == null || watchers.isEmpty()) {
                 if (LOG.isTraceEnabled()) {
@@ -113,6 +117,7 @@ public class WatchManager {
                 }
             }
         }
+
         for (Watcher w : watchers) {
             if (supress != null && supress.contains(w)) {
                 continue;

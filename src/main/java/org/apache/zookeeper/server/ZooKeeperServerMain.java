@@ -51,6 +51,8 @@ public class ZooKeeperServerMain {
      * Start up the ZooKeeper server.
      *
      * @param args the configfile or the port datadir [ticktime]
+     *
+     * 单机版入口
      */
     public static void main(String[] args) {
         ZooKeeperServerMain main = new ZooKeeperServerMain();
@@ -125,6 +127,7 @@ public class ZooKeeperServerMain {
             cnxnFactory.startup(zkServer);
             // Watch status of ZooKeeper server. It will do a graceful shutdown
             // if the server is not running or hits an internal error.
+            //阻塞
             shutdownLatch.await();
             shutdown();
 

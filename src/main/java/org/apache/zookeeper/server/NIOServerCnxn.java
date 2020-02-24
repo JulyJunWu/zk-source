@@ -162,6 +162,7 @@ public class NIOServerCnxn extends ServerCnxn {
      * exceptions when testing.
      *
      * @param bb Buffer to send.
+     *   通过SocketChannel写出数据
      */
     protected void internalSendBuffer(ByteBuffer bb) {
         if (bb != ServerCnxnFactory.closeConn) {
@@ -171,6 +172,7 @@ public class NIOServerCnxn extends ServerCnxn {
             if(sk.isValid() &&
                     ((sk.interestOps() & SelectionKey.OP_WRITE) == 0)) {
                 try {
+                    //写数据到客户端
                     sock.write(bb);
                 } catch (IOException e) {
                     // we are just doing best effort right now
@@ -178,6 +180,7 @@ public class NIOServerCnxn extends ServerCnxn {
             }
             // if there is nothing left to send, we are done
             if (bb.remaining() == 0) {
+                // 发送数据包次数累加
                 packetSent();
                 return;
             }
@@ -209,6 +212,7 @@ public class NIOServerCnxn extends ServerCnxn {
         }
 
         if (incomingBuffer.remaining() == 0) { // have we read length bytes?
+            // 次数累加
             packetReceived();
             // 读写切换
             incomingBuffer.flip();
@@ -1123,6 +1127,9 @@ public class NIOServerCnxn extends ServerCnxn {
     @Override
     synchronized public void sendResponse(ReplyHeader h, Record r, String tag) {
         try {
+            InetSocketAddress remote = (InetSocketAddress) this.sock.getRemoteAddress();
+            LOG.info("响应到客户端 [{}:{}] | tag [{}] | Record [{}]" ,remote.getHostName(),remote.getPort(),tag,r == null ? "无" : r.getClass().getSimpleName());
+            // 序列化
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             // Make space for length
             BinaryOutputArchive bos = BinaryOutputArchive.getArchive(baos);
@@ -1138,6 +1145,7 @@ public class NIOServerCnxn extends ServerCnxn {
             }
             byte b[] = baos.toByteArray();
             ByteBuffer bb = ByteBuffer.wrap(b);
+            //设置响应的字节长度
             bb.putInt(b.length - 4).rewind();
             sendBuffer(bb);
             if (h.getXid() > 0) {
@@ -1175,7 +1183,8 @@ public class NIOServerCnxn extends ServerCnxn {
 
         // Convert WatchedEvent to a type that can be sent over the wire
         WatcherEvent e = event.getWrapper();
-
+        // 触发监听的 notification标记
+        LOG.info("触发监听");
         sendResponse(h, e, "notification");
     }
 

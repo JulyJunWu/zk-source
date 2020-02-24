@@ -37,10 +37,14 @@ import org.apache.zookeeper.data.StatPersisted;
  * 
  */
 public class DataNode implements Record {
-    /** the parent of this datanode */
+    /** the parent of this datanode
+     *父节点
+     **/
     DataNode parent;
 
-    /** the data for this datanode */
+    /** the data for this datanode
+     *  字节数据
+     **/
     byte data[];
 
     /**
@@ -57,6 +61,8 @@ public class DataNode implements Record {
      * the list of children for this node. note that the list of children string
      * does not contain the parent path -- just the last part of the path. This
      * should be synchronized on except deserializing (for speed up issues).
+     *
+     * 子节点名称
      */
     private Set<String> children = null;
 

@@ -28,6 +28,10 @@ public class ReplyHeader implements Record {
   private int err;
   public ReplyHeader() {
   }
+
+  /**
+   * 响应头部
+   */
   public ReplyHeader(
         int xid,
         long zxid,

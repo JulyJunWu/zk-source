@@ -76,6 +76,10 @@ import org.apache.zookeeper.txn.TxnHeader;
  * state of the system. It counts on ZooKeeperServer to update
  * outstandingRequests, so that it can take into account transactions that are
  * in the queue to be applied when generating a transaction.
+ *
+ *   维护一个请求队列
+ *   同时自身又是一个线程
+ *
  */
 public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
         RequestProcessor {
@@ -94,7 +98,9 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
      * should never be useed otherwise
      */
     private static  boolean failCreate = false;
-
+    /**
+     * 存放请求的队列
+     */
     LinkedBlockingQueue<Request> submittedRequests = new LinkedBlockingQueue<Request>();
 
     RequestProcessor nextProcessor;
@@ -120,9 +126,11 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
     public void run() {
         try {
             while (true) {
+                // 阻塞获取请求处理
                 Request request = submittedRequests.take();
                 long traceMask = ZooTrace.CLIENT_REQUEST_TRACE_MASK;
                 if (request.type == OpCode.ping) {
+                    LOG.info("心跳");
                     traceMask = ZooTrace.CLIENT_PING_TRACE_MASK;
                 }
                 if (LOG.isTraceEnabled()) {
@@ -131,6 +139,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
                 if (Request.requestOfDeath == request) {
                     break;
                 }
+                //
                 pRequest(request);
             }
         } catch (RequestProcessorException e) {
@@ -534,19 +543,24 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
         request.txn = null;
         
         try {
+            //请求命令的类型
             switch (request.type) {
+                // 创建
                 case OpCode.create:
                 CreateRequest createRequest = new CreateRequest();
                 pRequest2Txn(request.type, zks.getNextZxid(), request, createRequest, true);
                 break;
+                //删除
             case OpCode.delete:
                 DeleteRequest deleteRequest = new DeleteRequest();               
                 pRequest2Txn(request.type, zks.getNextZxid(), request, deleteRequest, true);
                 break;
+                //设置数据
             case OpCode.setData:
                 SetDataRequest setDataRequest = new SetDataRequest();                
                 pRequest2Txn(request.type, zks.getNextZxid(), request, setDataRequest, true);
                 break;
+                //设置访问控制
             case OpCode.setACL:
                 SetACLRequest setAclRequest = new SetACLRequest();                
                 pRequest2Txn(request.type, zks.getNextZxid(), request, setAclRequest, true);
@@ -638,6 +652,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
             case OpCode.getChildren2:
             case OpCode.ping:
             case OpCode.setWatches:
+                // 检查session是否过期
                 zks.sessionTracker.checkSession(request.sessionId,
                         request.getOwner());
                 break;
@@ -678,6 +693,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
             }
         }
         request.zxid = zks.getZxid();
+
         nextProcessor.processRequest(request);
     }
 

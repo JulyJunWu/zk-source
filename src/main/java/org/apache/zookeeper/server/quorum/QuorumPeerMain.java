@@ -116,13 +116,13 @@ public class QuorumPeerMain {
         purgeMgr.start();
 
         if (args.length == 1 && config.servers.size() > 0) {
+            LOG.info("集群当时启动");
             runFromConfig(config);
         } else {
             LOG.warn("Either no config or no quorum defined in config, running "
                     + " in standalone mode");
             // there is only server in the quorum -- run as standalone
-            // 单机启动
-            System.out.println("单机启动");
+            LOG.info("单机启动");
             ZooKeeperServerMain.main(args);
         }
     }
