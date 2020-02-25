@@ -22,7 +22,9 @@ import org.apache.zookeeper.server.quorum.QuorumPeer.ServerState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * 投票实体
+ */
 public class Vote {
     private static final Logger LOG = LoggerFactory.getLogger(Vote.class);
     
@@ -87,9 +89,13 @@ public class Vote {
     }
     
     final private int version;
-    
+    /**
+     * myid
+     */
     final private long id;
-    
+    /**
+     * 当前最大的事物ID
+     */
     final private long zxid;
     
     final private long electionEpoch;

@@ -241,7 +241,7 @@ public class FastLeaderElection implements Election {
             }
 
             public void run() {
-
+                LOG.info("快速选举 | {} thread start", this.getClass().getSimpleName());
                 Message response;
                 while (!stop) {
                     // Sleeps on receive
@@ -270,11 +270,8 @@ public class FastLeaderElection implements Election {
                             sendqueue.offer(notmsg);
                         } else {
                             // Receive new message
-                            if (LOG.isDebugEnabled()) {
-                                LOG.debug("Receive new notification message. My id = "
+                                LOG.info("Receive new notification message. My id = "
                                         + self.getId());
-                            }
-
                             /*
                              * We check for 28 bytes for backward compatibility
                              */
@@ -427,17 +424,18 @@ public class FastLeaderElection implements Election {
             }
 
             public void run() {
+                LOG.info("快速选举 | WorkerSender is start | {}",this.getClass().getSimpleName());
                 while (!stop) {
                     try {
                         ToSend m = sendqueue.poll(3000, TimeUnit.MILLISECONDS);
                         if(m == null) continue;
-
+                        LOG.info("WorkerSender 处理 暂未发送的投票");
                         process(m);
                     } catch (InterruptedException e) {
                         break;
                     }
                 }
-                LOG.info("WorkerSender is down");
+                LOG.info("WorkerSender is down | {}",this.getClass().getSimpleName());
             }
 
             /**
@@ -446,6 +444,7 @@ public class FastLeaderElection implements Election {
              * @param m     message to send
              */
             void process(ToSend m) {
+                //将对象转换成字节缓冲
                 ByteBuffer requestBuffer = buildMsg(m.state.ordinal(), 
                                                         m.leader,
                                                         m.zxid, 
@@ -580,12 +579,11 @@ public class FastLeaderElection implements Election {
                     ServerState.LOOKING,
                     sid,
                     proposedEpoch);
-            if(LOG.isDebugEnabled()){
-                LOG.debug("Sending Notification: " + proposedLeader + " (n.leader), 0x"  +
+            LOG.info("Sending Notification: " + proposedLeader + " (n.leader), 0x"  +
                       Long.toHexString(proposedZxid) + " (n.zxid), 0x" + Long.toHexString(logicalclock.get())  +
                       " (n.round), " + sid + " (recipient), " + self.getId() +
                       " (myid), 0x" + Long.toHexString(proposedEpoch) + " (n.peerEpoch)");
-            }
+            LOG.info("发送投票到sendQueue队列 | 当前服务器:{}",self.cnxnFactory.getLocalPort());
             sendqueue.offer(notmsg);
         }
     }
@@ -812,6 +810,7 @@ public class FastLeaderElection implements Election {
 
             LOG.info("New election. My id =  " + self.getId() +
                     ", proposed zxid=0x" + Long.toHexString(proposedZxid));
+            //发送投票
             sendNotifications();
 
             /*

@@ -513,6 +513,8 @@ public class QuorumCnxManager {
     public void toSend(Long sid, ByteBuffer b) {
         /*
          * If sending message to myself, then simply enqueue it (loopback).
+         *
+         * 如果发送的是自己,那么直接添加到接收队列
          */
         if (this.mySid == sid) {
              b.position(0);
@@ -526,6 +528,7 @@ public class QuorumCnxManager {
               */
              ArrayBlockingQueue<ByteBuffer> bq = new ArrayBlockingQueue<ByteBuffer>(SEND_CAPACITY);
              ArrayBlockingQueue<ByteBuffer> bqExisting = queueSendMap.putIfAbsent(sid, bq);
+             // 将缓冲区添加到队列
              if (bqExisting != null) {
                  addToSendQueue(bqExisting, b);
              } else {
@@ -545,6 +548,7 @@ public class QuorumCnxManager {
         if (!connectedToPeer(sid)){
             InetSocketAddress electionAddr;
             if (view.containsKey(sid)) {
+                // 获取选举端口
                 electionAddr = view.get(sid).electionAddr;
             } else {
                 LOG.warn("Invalid server id: " + sid);
@@ -552,11 +556,11 @@ public class QuorumCnxManager {
             }
             try {
 
-                LOG.debug("Opening channel to server " + sid);
+                LOG.info("Opening channel to server " + sid);
                 Socket sock = new Socket();
                 setSockOpts(sock);
                 sock.connect(view.get(sid).electionAddr, cnxTO);
-                LOG.debug("Connected to server " + sid);
+                LOG.info("Connected to server " + sid);
 
                 // Sends connection request asynchronously if the quorum
                 // sasl authentication is enabled. This is required because
@@ -592,7 +596,7 @@ public class QuorumCnxManager {
                 }
             }
         } else {
-            LOG.debug("There is a connection already for server " + sid);
+            LOG.info("There is a connection already for server " + sid);
         }
     }
     
@@ -719,6 +723,7 @@ public class QuorumCnxManager {
          */
         @Override
         public void run() {
+            LOG.info("listener run | 线程[{}]",Thread.currentThread().getName());
             int numRetries = 0;
             InetSocketAddress addr;
             while((!shutdown) && (numRetries < 3)){
@@ -730,15 +735,21 @@ public class QuorumCnxManager {
                             .electionAddr.getPort();
                         addr = new InetSocketAddress(port);
                     } else {
+                        //得到选举的端口
                         addr = view.get(QuorumCnxManager.this.mySid)
                             .electionAddr;
                     }
                     LOG.info("My election bind port: " + addr.toString());
+                    //重设线程名
                     setName(view.get(QuorumCnxManager.this.mySid)
                             .electionAddr.toString());
+                    //绑定端口
                     ss.bind(addr);
+                    //开始工作
+                    LOG.info("{} | {} | Thread start",this.getClass().getSimpleName(),this.getName());
                     while (!shutdown) {
                         Socket client = ss.accept();
+                        // 设置socket属性
                         setSockOpts(client);
                         LOG.info("Received connection request "
                                 + client.getRemoteSocketAddress());
@@ -748,6 +759,7 @@ public class QuorumCnxManager {
                         // enabled. This is required because sasl server
                         // authentication process may take few seconds to finish,
                         // this may delay next peer connection requests.
+                        // 是否开启安全验证,默认为false
                         if (quorumSaslAuthEnabled) {
                             receiveConnectionAsync(client);
                         } else {
@@ -873,7 +885,12 @@ public class QuorumCnxManager {
             threadCnt.decrementAndGet();
             return running;
         }
-        
+
+        /**
+         * 向socket发送数据包
+         * @param b
+         * @throws IOException
+         */
         synchronized void send(ByteBuffer b) throws IOException {
             byte[] msgBytes = new byte[b.capacity()];
             try {
@@ -883,7 +900,9 @@ public class QuorumCnxManager {
                 LOG.error("BufferUnderflowException ", be);
                 return;
             }
+            //写入长度
             dout.writeInt(b.capacity());
+            //写入数据
             dout.write(b.array());
             dout.flush();
         }
@@ -909,7 +928,7 @@ public class QuorumCnxManager {
                 if (bq == null || isSendQueueEmpty(bq)) {
                    ByteBuffer b = lastMessageSent.get(sid);
                    if (b != null) {
-                       LOG.debug("Attempting to send lastMessage to sid=" + sid);
+                       LOG.info("Attempting to send lastMessage to sid=" + sid);
                        send(b);
                    }
                 }
@@ -934,6 +953,7 @@ public class QuorumCnxManager {
                         }
 
                         if(b != null){
+                            //保存到最后一次发送的数据
                             lastMessageSent.put(sid, b);
                             send(b);
                         }

@@ -70,11 +70,16 @@ public class QuorumPeerConfig {
     protected int electionAlg = 3;
     protected int electionPort = 2182;
     protected boolean quorumListenOnAllIPs = false;
+    /**
+     * 保存集群数据
+     */
     protected final HashMap<Long,QuorumServer> servers =
         new HashMap<Long, QuorumServer>();
     protected final HashMap<Long,QuorumServer> observers =
         new HashMap<Long, QuorumServer>();
-
+    /**
+     * myid文件中的数字
+     */
     protected long serverId;
     protected HashMap<Long, Long> serverWeight = new HashMap<Long, Long>();
     protected HashMap<Long, Long> serverGroup = new HashMap<Long, Long>();
@@ -413,7 +418,7 @@ public class QuorumPeerConfig {
             // Now add observers to servers, once the quorums have been
             // figured out
             servers.putAll(observers);
-
+            //myid件和 dataDir路径一致
             File myIdFile = new File(dataDir, "myid");
             if (!myIdFile.exists()) {
                 throw new IllegalArgumentException(myIdFile.toString()

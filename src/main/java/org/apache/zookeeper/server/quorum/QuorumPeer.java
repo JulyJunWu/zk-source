@@ -287,6 +287,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
 
     /*
      * Record leader election time
+     * 快速选举leader记录的时间, 开始时间和结束时间(ms)
      */
     public long start_fle, end_fle;
     
@@ -314,6 +315,8 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     }
     /**
      * The servers that make up the cluster
+     *
+     * 集群的服务器 ID,IP,PORT
      */
     protected Map<Long, QuorumServer> quorumPeers;
     public int getQuorumSize(){
@@ -563,7 +566,9 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     }
 
     DatagramSocket udpSocket;
-
+    /**
+     * 集群通讯地址
+     * */
     private InetSocketAddress myQuorumAddr;
 
     public InetSocketAddress getQuorumAddress(){
@@ -650,7 +655,9 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     @Override
     public synchronized void start() {
         loadDataBase();
-        cnxnFactory.start();        
+        //启动监听2181客户端连接
+        cnxnFactory.start();
+        // 开始leader选举
         startLeaderElection();
         super.start();
     }
@@ -854,7 +861,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     }
 
     protected Election makeLEStrategy(){
-        LOG.debug("Initializing leader election protocol...");
+        LOG.info("Initializing leader election protocol...");
         if (getElectionType() == 0) {
             electionAlg = new LeaderElection(this);
         }        
@@ -888,7 +895,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
         setName("QuorumPeer" + "[myid=" + getId() + "]" +
                 cnxnFactory.getLocalAddress());
 
-        LOG.debug("Starting quorum peer");
+        LOG.info("Starting quorum peer thread | {} | {}",this.getClass().getSimpleName(),this.getName());
         try {
             jmxQuorumBean = new QuorumBean(this);
             MBeanRegistry.getInstance().register(jmxQuorumBean, null);
