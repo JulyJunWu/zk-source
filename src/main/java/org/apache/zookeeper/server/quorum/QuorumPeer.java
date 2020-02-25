@@ -112,6 +112,12 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
      */
     private ZKDatabase zkDb;
 
+    /**
+     * 用来保存 server.节点
+     * 如:
+     *  server.1=127.0.0.1:2888:3888
+     *  server.2=127.0.0.1:2889:3889
+     */
     public static class QuorumServer {
         private QuorumServer(long id, InetSocketAddress addr,
                 InetSocketAddress electionAddr) {
@@ -234,16 +240,27 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
         public InetSocketAddress electionAddr;
         
         public String hostname;
-
+        /**
+         * 集群通讯端口
+         */
         public int port=2888;
 
+        /**
+         * 集群选举端口
+         */
         public int electionPort=-1;
 
+        /**
+         * myid
+         */
         public long id;
         
         public LearnerType type = LearnerType.PARTICIPANT;
     }
 
+    /**
+     * 服务器所在状态
+     */
     public enum ServerState {
         LOOKING, FOLLOWING, LEADING, OBSERVING;
     }

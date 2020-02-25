@@ -317,6 +317,8 @@ public class FileTxnLog implements TxnLog {
     /**
      * commit the logs. make sure that evertyhing hits the
      * disk
+     *
+     *  持久化到磁盘
      */
     public synchronized void commit() throws IOException {
         if (logStream != null) {

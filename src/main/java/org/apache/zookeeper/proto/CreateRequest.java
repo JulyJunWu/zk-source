@@ -23,9 +23,21 @@ import org.apache.jute.*;
 import org.apache.yetus.audience.InterfaceAudience;
 @InterfaceAudience.Public
 public class CreateRequest implements Record {
+  /**
+   * 路径
+   */
   private String path;
+  /**
+   * 字节数据
+   */
   private byte[] data;
+  /**
+   * 权限控制
+   */
   private java.util.List<org.apache.zookeeper.data.ACL> acl;
+  /**
+   * 创建的节点类型
+   */
   private int flags;
   public CreateRequest() {
   }

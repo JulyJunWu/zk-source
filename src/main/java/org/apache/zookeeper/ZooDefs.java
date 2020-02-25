@@ -28,6 +28,9 @@ import org.apache.zookeeper.data.Id;
 @InterfaceAudience.Public
 public class ZooDefs {
 
+    /**
+     * 命令操作代表含义
+     */
     @InterfaceAudience.Public
     public interface OpCode {
         public final int notification = 0;

@@ -23,13 +23,35 @@ import org.apache.jute.*;
 import org.apache.yetus.audience.InterfaceAudience;
 @InterfaceAudience.Public
 public class StatPersisted implements Record {
+  /**
+   * 创建该节点的事务ID
+   */
   private long czxid;
+  /**
+   * 最后一次修改该节点的事务ID
+   */
   private long mzxid;
+  /**
+   * 创建的时间,固定
+   */
   private long ctime;
+  /**
+   * 最后修改的时间
+   */
   private long mtime;
+  /**
+   * 当前数据的版本号; 修改该数据的次数
+   */
   private int version;
+  /**
+   * 子节点的版本号,子节点每变动一次都会自增
+   */
   private int cversion;
   private int aversion;
+  /**
+   *  0   : 表示持久节点
+   *  非0 : 则是临时节点
+   */
   private long ephemeralOwner;
   private long pzxid;
   public StatPersisted() {

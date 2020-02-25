@@ -30,6 +30,9 @@ public class Stat implements Record {
   private int version;
   private int cversion;
   private int aversion;
+  /**
+   * 如果不为0 , 那么说明该节点是临时节点
+   */
   private long ephemeralOwner;
   private int dataLength;
   private int numChildren;

@@ -49,9 +49,15 @@ import org.slf4j.LoggerFactory;
 public class FileTxnSnapLog {
     //the direcotry containing the 
     //the transaction logs
+    /**
+     * 事务日志文件
+     */
     private final File dataDir;
     //the directory containing the
     //the snapshot directory
+    /**
+     * 快照文件
+     */
     private final File snapDir;
     private TxnLog txnLog;
     private SnapShot snapLog;
@@ -79,7 +85,6 @@ public class FileTxnSnapLog {
      */
     public FileTxnSnapLog(File dataDir, File snapDir) throws IOException {
         LOG.debug("Opening datadir:{} snapDir:{}", dataDir, snapDir);
-
         this.dataDir = new File(dataDir, version + VERSION);
         this.snapDir = new File(snapDir, version + VERSION);
         if (!this.dataDir.exists()) {
@@ -292,6 +297,8 @@ public class FileTxnSnapLog {
      * @param sessionsWithTimeouts the sesssion timeouts to be
      * serialized onto disk
      * @throws IOException
+     *
+     * 快照保存
      */
     public void save(DataTree dataTree,
             ConcurrentHashMap<Long, Integer> sessionsWithTimeouts)

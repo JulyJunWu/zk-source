@@ -106,12 +106,27 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
     protected int minSessionTimeout = -1;
     /** value of -1 indicates unset, use default */
     protected int maxSessionTimeout = -1;
+    /**
+     * session检查器
+     */
     protected SessionTracker sessionTracker;
+    /**
+     * 日志和快照相关
+     */
     private FileTxnSnapLog txnLogFactory = null;
+    /**
+     *  内存数据库
+     */
     private ZKDatabase zkDb;
     private final AtomicLong hzxid = new AtomicLong(0);
     public final static Exception ok = new Exception("No prob");
+    /**
+     * 请求处理链中第一个processor , 默认顺序是 PreRequestProcessor -> SyncRequestProcessor -> FinalRequestProcessor
+     */
     protected RequestProcessor firstProcessor;
+    /**
+     * 服务器状态
+     */
     protected volatile State state = State.INITIAL;
 
     /**
@@ -126,17 +141,30 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
      * is more of a sanity check.
      */
     static final private long superSecret = 0XB3415C00L;
-
+    /**
+     * 正在processor链中处理的请求数量
+     */
     private final AtomicInteger requestsInProcess = new AtomicInteger(0);
     final List<ChangeRecord> outstandingChanges = new ArrayList<ChangeRecord>();
     // this data structure must be accessed under the outstandingChanges lock
     final HashMap<String, ChangeRecord> outstandingChangesForPath =
         new HashMap<String, ChangeRecord>();
-    
-    private ServerCnxnFactory serverCnxnFactory;
 
+    /**
+     * 处理连接请求 线程 , 默认实现是NioServerCnxnFactory
+     */
+    private ServerCnxnFactory serverCnxnFactory;
+    /**
+     * 服务器计数器
+     */
     private final ServerStats serverStats;
+    /**
+     * 监听服务器状态
+     */
     private final ZooKeeperServerListener listener;
+    /**
+     * 服务器关闭执行器
+     */
     private ZooKeeperServerShutdownHandler zkShutdownHandler;
 
     void removeCnxn(ServerCnxn cnxn) {
@@ -296,7 +324,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
             }
         }
         zkDb.setDataTreeInit(true);
-        System.out.println("清除过期session");
+        LOG.info("清除过期session | 数量 [{}]",deadSessions.size());
         for (long session : deadSessions) {
             // XXX: Is lastProcessedZxid really the best thing to use?
             killSession(session, zkDb.getDataTreeLastProcessedZxid());
@@ -478,6 +506,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         this.state = state;
         // Notify server state changes to the registered shutdown handler, if any.
         if (zkShutdownHandler != null) {
+            //服务器关闭
             zkShutdownHandler.handle(state);
         } else {
             LOG.debug("ZKShutdownHandler is not registered, so ZooKeeper server "

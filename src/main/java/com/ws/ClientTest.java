@@ -3,6 +3,7 @@ package com.ws;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -16,7 +17,7 @@ public class ClientTest {
 
     static {
         try {
-            zooKeeper = new ZooKeeper("127.0.0.1:2181", 40000, new Watcher() {
+            zooKeeper = new ZooKeeper("127.0.0.1:2181", 20000, new Watcher() {
                 public void process(WatchedEvent event) {
 
                 }
@@ -28,8 +29,10 @@ public class ClientTest {
     }
 
     public static void create() throws Exception {
-        String s = zooKeeper.create("/ws/hh", "HelloWorld".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
-        System.out.println(s);
+        //String s = zooKeeper.create("/ws/qjw", "HelloWorld".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+        //TimeUnit.SECONDS.sleep(5);
+        String s2 = zooKeeper.create("/ws/qjw/NN", "HelloWorld".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
+        System.out.println(s2);
     }
 
     public static void getData() throws Exception {
@@ -43,7 +46,7 @@ public class ClientTest {
         zooKeeper.delete("/ws",-1);
     }
     public static void main(String[] args)throws Exception {
-        deleteNode();
-        LockSupport.park();
+        create();
+        // LockSupport.park();
     }
 }

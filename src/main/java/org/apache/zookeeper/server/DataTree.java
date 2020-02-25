@@ -238,6 +238,8 @@ public class DataTree {
      * @param path
      *            the path to be checked
      * @return true if a special path. false if not.
+     *
+     *  该路径是否zk自带的
      */
     boolean isSpecialPath(String path) {
         if (rootZookeeper.equals(path) || procZookeeper.equals(path)
@@ -377,7 +379,7 @@ public class DataTree {
             long ephemeralOwner, int parentCVersion, long zxid, long time)
             throws KeeperException.NoNodeException,
             KeeperException.NodeExistsException {
-        LOG.info("createNode | 路径[{}] | 数据[{}] | 线程[{}]",path,new String(data),Thread.currentThread().getName());
+        LOG.info("createNode | 路径[{}] | 数据[{}] | 线程[{}] | 临时节点[{}]",path,new String(data),Thread.currentThread().getName(),ephemeralOwner != 0);
         int lastSlash = path.lastIndexOf('/');
         String parentName = path.substring(0, lastSlash);
         String childName = path.substring(lastSlash + 1);
@@ -410,6 +412,7 @@ public class DataTree {
             DataNode child = new DataNode(parent, data, longval, stat);
             parent.addChild(childName);
             nodes.put(path, child);
+            //临时节点
             if (ephemeralOwner != 0) {
                 HashSet<String> list = ephemerals.get(ephemeralOwner);
                 if (list == null) {
@@ -719,6 +722,9 @@ public class DataTree {
 
     public volatile long lastProcessedZxid = 0;
 
+    /**
+     * 执行各种命令的逻辑
+     */
     public ProcessTxnResult processTxn(TxnHeader header, Record txn)
     {
         ProcessTxnResult rc = new ProcessTxnResult();
@@ -905,10 +911,12 @@ public class DataTree {
         // so there is no need for synchronization. The list is not
         // changed here. Only create and delete change the list which
         // are again called from FinalRequestProcessor in sequence.
+        // 从临时节点中移除
         HashSet<String> list = ephemerals.remove(session);
         if (list != null) {
             for (String path : list) {
                 try {
+                    // 删除node数据
                     deleteNode(path, zxid);
                     if (LOG.isDebugEnabled()) {
                         LOG

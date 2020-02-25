@@ -227,6 +227,7 @@ public class Util {
      * @param txn transaction data
      * @return serialized transaction record
      * @throws IOException
+     * 序列化数据
      */
     public static byte[] marshallTxnEntry(TxnHeader hdr, Record txn)
             throws IOException {

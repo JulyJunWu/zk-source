@@ -80,6 +80,11 @@ import org.apache.zookeeper.txn.TxnHeader;
  *   维护一个请求队列
  *   同时自身又是一个线程
  *
+ *   职责:
+ *      个人感觉更多的是做一些参数校验, 如session过期 , 父节点是否存在, 节点是否存在, 参数不合法等等的验证信息
+ *      做完这些验证性操作后,会将数据添加到列表 outstandingChanges和outstandingChangesForPath中
+ *      添加完毕后,任务结束, 等待其他线程去处理列表数据;
+ *
  */
 public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
         RequestProcessor {
@@ -335,6 +340,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
                 zks.sessionTracker.checkSession(request.sessionId, request.getOwner());
                 CreateRequest createRequest = (CreateRequest)record;   
                 if(deserialize)
+                    //反序列化
                     ByteBufferInputStream.byteBuffer2Record(request.request, createRequest);
                 String path = createRequest.getPath();
                 int lastSlash = path.lastIndexOf('/');
@@ -343,6 +349,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
                             Long.toHexString(request.sessionId));
                     throw new KeeperException.BadArgumentsException(path);
                 }
+                //去重ACL
                 List<ACL> listACL = removeDuplicates(createRequest.getAcl());
                 if (!fixupACL(request.authInfo, listACL)) {
                     throw new KeeperException.InvalidACLException(path);
@@ -355,17 +362,20 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
                 int parentCVersion = parentRecord.stat.getCversion();
                 CreateMode createMode =
                     CreateMode.fromFlag(createRequest.getFlags());
+                //如果是顺序节点的话
                 if (createMode.isSequential()) {
                     path = path + String.format(Locale.ENGLISH, "%010d", parentCVersion);
                 }
                 validatePath(path, request.sessionId);
                 try {
+                    //验证该节点是否存在
                     if (getRecordForPath(path) != null) {
                         throw new KeeperException.NodeExistsException(path);
                     }
                 } catch (KeeperException.NoNodeException e) {
                     // ignore this one
                 }
+                //如果父节点是临时节点,则不允许拥有子节点
                 boolean ephemeralParent = parentRecord.stat.getEphemeralOwner() != 0;
                 if (ephemeralParent) {
                     throw new KeeperException.NoChildrenForEphemeralsException(path);
@@ -380,6 +390,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
                 }
                 parentRecord = parentRecord.duplicate(request.hdr.getZxid());
                 parentRecord.childCount++;
+                //父节点的StatPersisted的版本加一(这个版本代表子节点的版本号,子节点变动都会进行自增)
                 parentRecord.stat.setCversion(newCversion);
                 addChangeRecord(parentRecord);
                 addChangeRecord(new ChangeRecord(request.hdr.getZxid(), path, s,
@@ -405,6 +416,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
                 if (version != -1 && nodeRecord.stat.getVersion() != version) {
                     throw new KeeperException.BadVersionException(path);
                 }
+                //含有子节点的节点不可被删除
                 if (nodeRecord.childCount > 0) {
                     throw new KeeperException.NotEmptyException(path);
                 }
@@ -463,6 +475,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
                 break;
             case OpCode.createSession:
                 request.request.rewind();
+                // 获取客户端传递的session超时时间
                 int to = request.request.getInt();
                 request.txn = new CreateSessionTxn(to);
                 request.request.rewind();
@@ -697,6 +710,9 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
         nextProcessor.processRequest(request);
     }
 
+    /**
+     * ACL去重
+     */
     private List<ACL> removeDuplicates(List<ACL> acl) {
 
         ArrayList<ACL> retval = new ArrayList<ACL>();

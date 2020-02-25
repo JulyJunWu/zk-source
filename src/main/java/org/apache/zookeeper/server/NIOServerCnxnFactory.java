@@ -116,7 +116,7 @@ public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable 
     public void start() {
         // ensure thread is started once and only once
         if (thread.getState() == Thread.State.NEW) {
-            System.out.println("启动监听2181端口连接事件的线程");
+            LOG.info("启动监听2181端口线程");
             thread.start();
         }
     }
@@ -168,6 +168,10 @@ public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable 
         }
     }
 
+    /**
+     * 移除连接
+     * @param cnxn
+     */
     public void removeCnxn(NIOServerCnxn cnxn) {
         synchronized(cnxns) {
             // Remove the related session from the sessionMap.

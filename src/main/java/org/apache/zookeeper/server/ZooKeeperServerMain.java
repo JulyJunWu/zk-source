@@ -113,7 +113,7 @@ public class ZooKeeperServerMain {
             final CountDownLatch shutdownLatch = new CountDownLatch(1);
             zkServer.registerServerShutdownHandler(
                     new ZooKeeperServerShutdownHandler(shutdownLatch));
-
+            //创建事务日志和快照类
             txnLog = new FileTxnSnapLog(new File(config.dataLogDir), new File(
                     config.dataDir));
             txnLog.setServerStats(zkServer.serverStats());
@@ -122,15 +122,18 @@ public class ZooKeeperServerMain {
             zkServer.setMinSessionTimeout(config.minSessionTimeout);
             zkServer.setMaxSessionTimeout(config.maxSessionTimeout);
             cnxnFactory = ServerCnxnFactory.createFactory();
+            // 配置属性
             cnxnFactory.configure(config.getClientPortAddress(),
                     config.getMaxClientCnxns());
+            // 启动
             cnxnFactory.startup(zkServer);
             // Watch status of ZooKeeper server. It will do a graceful shutdown
             // if the server is not running or hits an internal error.
-            //阻塞
+            //阻塞, 等待变为0 关闭
             shutdownLatch.await();
+            // 关闭服务器操作
             shutdown();
-
+            //等待监听2181的服务器关闭
             cnxnFactory.join();
             if (zkServer.canShutdown()) {
                 zkServer.shutdown(true);

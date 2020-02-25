@@ -75,7 +75,7 @@ public class ZKDatabase {
     protected LinkedList<Proposal> committedLog = new LinkedList<Proposal>();
     protected ReentrantReadWriteLock logLock = new ReentrantReadWriteLock();
     /**
-     * 是否初始化
+     * 是否初始化, 主要是执行加载磁盘数据到内存
      */
     volatile private boolean initialized = false;
     
@@ -222,7 +222,7 @@ public class ZKDatabase {
      *  2.设置为初始化完毕
      */
     public long loadDataBase() throws IOException {
-        System.out.println("从磁盘恢复数据到内存");
+        LOG.info("从磁盘恢复数据到内存");
         long zxid = snapLog.restore(dataTree, sessionsWithTimeouts, commitProposalPlaybackListener);
         initialized = true;
         return zxid;

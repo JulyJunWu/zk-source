@@ -52,6 +52,9 @@ public abstract class ServerCnxnFactory {
     private static final Logger LOG = LoggerFactory.getLogger(ServerCnxnFactory.class);
 
     // sessionMap is used to speed up closeSession()
+    /**
+     *  session 对应的 NioServerCnxn
+     */
     protected final ConcurrentMap<Long, ServerCnxn> sessionMap =
             new ConcurrentHashMap<Long, ServerCnxn>();
 

@@ -52,6 +52,9 @@ public class SyncRequestProcessor extends ZooKeeperCriticalThread implements Req
      */
     private final LinkedBlockingQueue<Request> queuedRequests =
         new LinkedBlockingQueue<Request>();
+    /**
+     * FinalRequestProcessor
+     */
     private final RequestProcessor nextProcessor;
 
     private Thread snapInProcess = null;
@@ -140,6 +143,7 @@ public class SyncRequestProcessor extends ZooKeeperCriticalThread implements Req
                 }
                 if (si != null) {
                     // track the number of records written to the log
+                    // 预写日志,先将请求写入日志
                     if (zks.getZKDatabase().append(si)) {
                         logCount++;
                         if (logCount > (snapCount / 2 + randRoll)) {
@@ -153,12 +157,15 @@ public class SyncRequestProcessor extends ZooKeeperCriticalThread implements Req
                                 snapInProcess = new ZooKeeperThread("Snapshot Thread") {
                                         public void run() {
                                             try {
+                                                LOG.info("触发保存快照线程 | 线程[{}]",Thread.currentThread().getName());
+                                                //保存快照
                                                 zks.takeSnapshot();
                                             } catch(Exception e) {
                                                 LOG.warn("Unexpected exception", e);
                                             }
                                         }
                                     };
+                                //启动写入快照的线程
                                 snapInProcess.start();
                             }
                             logCount = 0;
@@ -178,6 +185,7 @@ public class SyncRequestProcessor extends ZooKeeperCriticalThread implements Req
                     }
                     toFlush.add(si);
                     if (toFlush.size() > 1000) {
+                        //将数据持久化到磁盘
                         flush(toFlush);
                     }
                 }

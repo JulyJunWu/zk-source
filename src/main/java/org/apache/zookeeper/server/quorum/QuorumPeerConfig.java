@@ -56,6 +56,9 @@ public class QuorumPeerConfig {
     // zk日志存放目录
     protected String dataLogDir;
     protected int tickTime = ZooKeeperServer.DEFAULT_TICK_TIME;
+    /**
+     * 单个IP最多连接客户端数
+     */
     protected int maxClientCnxns = 60;
     /** defaults to -1 if not set explicitly */
     protected int minSessionTimeout = -1;
@@ -148,13 +151,13 @@ public class QuorumPeerConfig {
             Properties cfg = new Properties();
             FileInputStream in = new FileInputStream(configFile);
             try {
-                System.out.println("配置加载");
+                LOG.info("配置加载");
                 cfg.load(in);
             } finally {
                 in.close();
             }
             // 参数赋值
-            System.out.println("参数赋值");
+            LOG.info("参数赋值");
             parseProperties(cfg);
         } catch (IOException e) {
             throw new ConfigException("Error processing " + path, e);

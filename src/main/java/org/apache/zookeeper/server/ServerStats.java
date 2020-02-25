@@ -26,15 +26,28 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Basic Server Statistics
+ * 服务器的计数器
  */
 public class ServerStats {
+    /**
+     * 发送客户端数据的次数
+     */
     private long packetsSent;
     /**
-     * 接收到的数据的次数
+     * 接收客户端数据的次数
      */
     private long packetsReceived;
+    /**
+     * 最大延迟
+     */
     private long maxLatency;
+    /**
+     * 最小延迟
+     */
     private long minLatency = Long.MAX_VALUE;
+    /**
+     * 总延迟
+     */
     private long totalLatency = 0;
     private long count = 0;
     private AtomicLong fsyncThresholdExceedCount = new AtomicLong(0);

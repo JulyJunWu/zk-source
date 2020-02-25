@@ -77,7 +77,9 @@ public class Request {
     public final int type;
 
     public final ByteBuffer request;
-
+    /**
+     * 客户端连接相关对象,如NioServerCnxn
+     */
     public final ServerCnxn cnxn;
 
     public TxnHeader hdr;
