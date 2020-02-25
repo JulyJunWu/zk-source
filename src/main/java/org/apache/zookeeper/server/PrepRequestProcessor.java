@@ -85,6 +85,8 @@ import org.apache.zookeeper.txn.TxnHeader;
  *      做完这些验证性操作后,会将数据添加到列表 outstandingChanges和outstandingChangesForPath中
  *      添加完毕后,任务结束, 等待其他线程去处理列表数据;
  *
+ *    处理链 : PrepRequestProcessor -> SyncRequestProcessor -> FinalRequestProcessor
+ *
  */
 public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
         RequestProcessor {
@@ -108,6 +110,10 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
      */
     LinkedBlockingQueue<Request> submittedRequests = new LinkedBlockingQueue<Request>();
 
+    /**
+     * 下一个链
+     * SyncRequestProcessor
+     */
     RequestProcessor nextProcessor;
 
     ZooKeeperServer zks;
@@ -368,7 +374,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
                 }
                 validatePath(path, request.sessionId);
                 try {
-                    //验证该节点是否存在
+                    //验证该路径是否存在
                     if (getRecordForPath(path) != null) {
                         throw new KeeperException.NodeExistsException(path);
                     }
@@ -678,7 +684,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
                 request.hdr.setType(OpCode.error);
                 request.txn = new ErrorTxn(e.code().intValue());
             }
-            LOG.info("Got user-level KeeperException when processing "
+            LOG.error("Got user-level KeeperException when processing "
                     + request.toString()
                     + " Error Path:" + e.getPath()
                     + " Error:" + e.getMessage());

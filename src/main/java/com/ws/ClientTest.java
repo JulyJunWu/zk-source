@@ -3,7 +3,6 @@ package com.ws;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -47,6 +46,6 @@ public class ClientTest {
     }
     public static void main(String[] args)throws Exception {
         create();
-        // LockSupport.park();
+        LockSupport.park();
     }
 }

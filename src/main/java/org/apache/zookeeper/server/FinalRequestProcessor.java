@@ -74,6 +74,11 @@ import org.apache.zookeeper.OpResult.ErrorResult;
  *
  * This RequestProcessor counts on ZooKeeperServer to populate the
  * outstandingRequests member of ZooKeeperServer.
+ *
+ *  1.处理一些事物 和 一个查询
+ *  2.总是在处理链的最后一个,所以没有下一个RequestProcessor
+ *  3.
+ *
  */
 public class FinalRequestProcessor implements RequestProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(FinalRequestProcessor.class);
@@ -142,6 +147,7 @@ public class FinalRequestProcessor implements RequestProcessor {
         ServerCnxn cnxn = request.cnxn;
 
         String lastOp = "NA";
+        // 已经处理完一个请求了,需要将 正在处理数减一
         zks.decInProcess();
         Code err = Code.OK;
         Record rsp = null;

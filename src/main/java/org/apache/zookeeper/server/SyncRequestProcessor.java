@@ -43,6 +43,10 @@ import org.slf4j.LoggerFactory;
  *             It never send ack back to the leader, so the nextProcessor will
  *             be null. This change the semantic of txnlog on the observer
  *             since it only contains committed txns.
+ *
+ *
+ *     1.处理请求日志到磁盘,批量处理请求到日志
+ *     2.只有请求记录同步到磁盘,请求才会发给下一个RequestProcessor处理
  */
 public class SyncRequestProcessor extends ZooKeeperCriticalThread implements RequestProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(SyncRequestProcessor.class);
