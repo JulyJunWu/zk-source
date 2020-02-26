@@ -87,14 +87,25 @@ public class Vote {
     }
     
     final private int version;
-    
+    /**
+     * 当前节点的myid
+     */
     final private long id;
-    
+    /**
+     * 最新的事务ID
+     */
     final private long zxid;
-    
+    /**
+     * 选举的轮次
+     */
     final private long electionEpoch;
     
     final private long peerEpoch;
+
+    /**
+     * 当前节点的状态
+     */
+    final private ServerState state;
     
     public int getVersion() {
         return version;
@@ -120,7 +131,6 @@ public class Vote {
         return state;
     }
 
-    final private ServerState state;
     
     @Override
     public boolean equals(Object o) {

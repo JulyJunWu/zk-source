@@ -1,4 +1,4 @@
-zk版本基于 : 3.4.12 
+zk版本基于 : 3.4.13
 
 单体启动:
     QuorumPeerMain
@@ -18,4 +18,14 @@ zk版本基于 : 3.4.12
     PrepRequestProcessor(同时又是一个线程) -> SyncRequestProcessor(同时也是一个线程) -> FinalRequestProcessor
     
     
-    
+集群下:
+    QuorumPeer
+    FastLeaderElection : 负责选举
+       Messenger : 
+           WorkerSender
+           WorkerReceiver
+    QuorumCnxManager:
+        Listener:
+        SendWorker: 每一个sid对应一个发送数据线程,本节点除外 
+        RecvWorker: 每一个sid对应一个接收数据线程,本节点除外
+    QuorumMaj: 投票数是否过半
