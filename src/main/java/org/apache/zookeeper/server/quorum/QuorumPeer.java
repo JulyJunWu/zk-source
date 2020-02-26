@@ -287,7 +287,6 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
 
     /*
      * Record leader election time
-     * 快速选举leader记录的时间, 开始时间和结束时间(ms)
      */
     public long start_fle, end_fle;
     
@@ -315,8 +314,6 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     }
     /**
      * The servers that make up the cluster
-     *
-     * 集群的服务器 ID,IP,PORT
      */
     protected Map<Long, QuorumServer> quorumPeers;
     public int getQuorumSize(){
@@ -355,7 +352,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     public synchronized Vote getCurrentVote(){
         return currentVote;
     }
-       
+
     public synchronized void setCurrentVote(Vote v){
         currentVote = v;
     }
@@ -567,8 +564,8 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
 
     DatagramSocket udpSocket;
     /**
-     * 集群通讯地址
-     * */
+     * 集群通讯的端口 , 默认是2888
+     */
     private InetSocketAddress myQuorumAddr;
 
     public InetSocketAddress getQuorumAddress(){
@@ -654,14 +651,20 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     
     @Override
     public synchronized void start() {
+        //加载磁盘数据 和读取投票轮次
         loadDataBase();
-        //启动监听2181客户端连接
+        // 启动监听客户端(2181)
         cnxnFactory.start();
-        // 开始leader选举
+        //开始选举
         startLeaderElection();
+        //启动线程
         super.start();
     }
 
+    /**
+     *  1. 加载磁盘数据
+     *  2. 读取配置中的投票轮次
+     */
     private void loadDataBase() {
         File updating = new File(getTxnFactory().getSnapDir(),
                                  UPDATING_EPOCH_FILENAME);
@@ -895,7 +898,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
         setName("QuorumPeer" + "[myid=" + getId() + "]" +
                 cnxnFactory.getLocalAddress());
 
-        LOG.info("Starting quorum peer thread | {} | {}",this.getClass().getSimpleName(),this.getName());
+        LOG.info("Starting quorum peer");
         try {
             jmxQuorumBean = new QuorumBean(this);
             MBeanRegistry.getInstance().register(jmxQuorumBean, null);

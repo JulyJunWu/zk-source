@@ -55,6 +55,8 @@ public class QuorumMaj implements QuorumVerifier {
     
     /**
      * Verifies if a set is a majority.
+     *
+     * 这就是需要投票过半的原因
      */
     public boolean containsQuorum(Set<Long> set){
         return (set.size() > half);
