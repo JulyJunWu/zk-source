@@ -111,11 +111,13 @@ public class FastLeaderElection implements Election {
 
         /*
          * current state of sender
+         * 发送者的服务器状态
          */
         ServerState state;
 
         /*
          * Address of sender
+         * 发送者的sid
          */
         long sid;
 
@@ -212,9 +214,23 @@ public class FastLeaderElection implements Election {
         long peerEpoch;
     }
 
-
+    /**
+     * 需要发出发的投票信息
+     *
+     * 生产者是: main线程,就是lookForLeader中的while循环产生
+     * 消费者是: WorkSender线程,不断从队列中拉取数据,分门别类的将数据发送到指定的sid 数组队列, 等待对应的SendWorker处理
+     *           sendqueue
+     *       /--------------\
+     *   lookForLeader循环中不断offer       WorkerSend poll
+     */
     LinkedBlockingQueue<ToSend> sendqueue;
-
+    /**
+     * 仅仅存放服务器状态是LOOKING 的投票
+     *              recvqueue
+     *       /------------------------\
+     * WorkerReceiver offer         lookForLeader函数循环中 poll
+     *
+     */
     LinkedBlockingQueue<Notification> recvqueue;
 
     /**
@@ -281,6 +297,8 @@ public class FastLeaderElection implements Election {
 
                             /*
                              * We check for 28 bytes for backward compatibility
+                             *
+                             * 如果数据长度小于28,说明这个消息是有问题的,跳过
                              */
                             if (response.buffer.capacity() < 28) {
                                 LOG.error("Got a short response: "
@@ -296,7 +314,7 @@ public class FastLeaderElection implements Election {
                             
                             // State of peer that sent this message
                             ServerState ackstate = ServerState.LOOKING;
-                            //转换成对应的服务器选举状态
+                            //该消息的服务器选举状态
                             switch (response.buffer.getInt()) {
                             case 0:
                                 ackstate = ServerState.LOOKING;
@@ -313,7 +331,7 @@ public class FastLeaderElection implements Election {
                             default:
                                 continue;
                             }
-                            
+                            //数据解析
                             n.leader = response.buffer.getLong();
                             n.zxid = response.buffer.getLong();
                             n.electionEpoch = response.buffer.getLong();
@@ -357,7 +375,8 @@ public class FastLeaderElection implements Election {
                                  */
                                 if((ackstate == ServerState.LOOKING)
                                         && (n.electionEpoch < logicalclock.get())){
-                                    // 如果对象的选举轮次比本节点的轮次低,说明对方已经过期了,将本节点的投票数据发给对方
+                                    // 如果对象的选举轮次比本节点的轮次低,说明对方已经过期了,善意提醒对方,
+                                    // 将本节点的投票数据发给对方
                                     Vote v = getVote();
                                     ToSend notmsg = new ToSend(ToSend.mType.notification,
                                             v.getId(),
@@ -422,6 +441,13 @@ public class FastLeaderElection implements Election {
         /**
          * This worker simply dequeues a message to send and
          * and queues it on the manager's queue.
+         *
+         *
+         * 1.不断从本类的sendqueue队列中获取 需要发送的投票信息
+         * 2.将投票数据转为字节缓冲转发给QuorumCnxManager对象处理
+         * 3.创建对应的sid服务端的socket客户端
+         * 4.将缓冲数据保存在 sid 对应的数组队列中
+         * 5.启动socket客户端对应读写2个线程
          */
 
         class WorkerSender extends ZooKeeperThread {
@@ -595,6 +621,8 @@ public class FastLeaderElection implements Election {
 
     /**
      * Send notifications to all peers upon a change in our vote
+     *
+     * 发送本节点的投票
      */
     private void sendNotifications() {
         for (QuorumServer server : self.getVotingView().values()) {
@@ -629,8 +657,8 @@ public class FastLeaderElection implements Election {
      * Check if a pair (server id, zxid) succeeds our
      * current vote.
      *
-     * 投票PK , true  : 代表外来节点胜利,意味着本节点的投票需要改变成对方的
-     *      *          false : 代表本节点胜利
+     * 投票PK , true  : 代表外来节点胜利
+     *          false : 代表本节点胜利
      *
      * @param id    Server identifier
      * @param zxid  Last zxid observed by the issuer of this vote
@@ -880,13 +908,16 @@ public class FastLeaderElection implements Election {
                  */
                 if(n == null){
                     if(manager.haveDelivered()){
+                        //发送本节点投票给各个节点
                         sendNotifications();
                     } else {
+                        //建立连接
                         manager.connectAll();
                     }
 
                     /*
                      * Exponential backoff
+                     * 没有数据时,阻塞翻倍,最大为60s
                      */
                     int tmpTimeOut = notTimeout*2;
                     notTimeout = (tmpTimeOut < maxNotificationInterval?
