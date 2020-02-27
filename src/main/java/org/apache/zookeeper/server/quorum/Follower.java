@@ -59,16 +59,21 @@ public class Follower extends Learner{
      * @throws InterruptedException
      */
     void followLeader() throws InterruptedException {
+        //结束选举的时间
         self.end_fle = Time.currentElapsedTime();
+        //选举消耗的时间
         long electionTimeTaken = self.end_fle - self.start_fle;
         self.setElectionTimeTaken(electionTimeTaken);
         LOG.info("FOLLOWING - LEADER ELECTION TOOK - {}", electionTimeTaken);
+        //重置
         self.start_fle = 0;
         self.end_fle = 0;
         fzk.registerJMX(new FollowerBean(this, zk), self.jmxLocalPeerBean);
         try {
+            //获取leader IP配置
             QuorumServer leaderServer = findLeader();            
             try {
+                //与leader的集群通讯端口(默认2888)进行socket连接
                 connectToLeader(leaderServer.addr, leaderServer.hostname);
                 long newEpochZxid = registerWithLeader(Leader.FOLLOWERINFO);
 
@@ -83,6 +88,7 @@ public class Follower extends Learner{
                 syncWithLeader(newEpochZxid);                
                 QuorumPacket qp = new QuorumPacket();
                 while (this.isRunning()) {
+                    LOG.info("1111");
                     readPacket(qp);
                     processPacket(qp);
                 }

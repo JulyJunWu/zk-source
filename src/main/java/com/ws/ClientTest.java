@@ -30,22 +30,25 @@ public class ClientTest {
     public static void create() throws Exception {
         //String s = zooKeeper.create("/ws/qjw", "HelloWorld".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
         //TimeUnit.SECONDS.sleep(5);
-        String s2 = zooKeeper.create("/ws/qjw/NN", "HelloWorld".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL_SEQUENTIAL);
+        String s2 = zooKeeper.create("/test", "HelloWorld".getBytes(), ZooDefs.Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
         System.out.println(s2);
     }
 
     public static void getData() throws Exception {
         Stat stat = new Stat();
-        byte [] data = zooKeeper.getData("/ws", false,stat);
+        byte[] data = zooKeeper.getData("/qjw", false, stat);
         System.out.println(new String(data));
     }
 
 
-    public static void deleteNode()throws Exception{
-        zooKeeper.delete("/ws",-1);
+    public static void deleteNode() throws Exception {
+        zooKeeper.delete("/ws", -1);
     }
-    public static void main(String[] args)throws Exception {
+
+    public static void main(String[] args) throws Exception {
+        //create();
         create();
+        //TimeUnit.SECONDS.sleep(2);
         LockSupport.park();
     }
 }

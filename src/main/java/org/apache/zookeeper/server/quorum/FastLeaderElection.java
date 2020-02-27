@@ -601,6 +601,7 @@ public class FastLeaderElection implements Election {
                 Long.toHexString(v.getZxid()) + ", my id=" + self.getId()
                 + ", my state=" + self.getPeerState());
         }
+        //清除未处理的投票数据
         recvqueue.clear();
     }
 
@@ -997,6 +998,7 @@ public class FastLeaderElection implements Election {
                              * 说明已经没有投票数据,可以确认leader了
                              */
                             if (n == null) {
+                                //设置本节点的为leading还是following
                                 self.setPeerState((proposedLeader == self.getId()) ?
                                         ServerState.LEADING: learningState());
 
@@ -1004,13 +1006,14 @@ public class FastLeaderElection implements Election {
                                                         proposedZxid,
                                                         logicalclock.get(),
                                                         proposedEpoch);
+                                //退出选举,清空未处理的投票数据
                                 leaveInstance(endVote);
                                 return endVote;
                             }
                         }
                         break;
                     case OBSERVING:
-                        LOG.debug("Notification from observer: " + n.sid);
+                        LOG.info("Notification from observer: " + n.sid);
                         break;
                     case FOLLOWING:
                     case LEADING:
@@ -1018,6 +1021,7 @@ public class FastLeaderElection implements Election {
                          * Consider all notifications from the same epoch
                          * together.
                          */
+                        // 与当前的轮次对比,如果相同的话放入投票集合中
                         if(n.electionEpoch == logicalclock.get()){
                             recvset.put(n.sid, new Vote(n.leader,
                                                           n.zxid,

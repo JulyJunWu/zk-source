@@ -147,6 +147,8 @@ public class Learner {
      * @param pp
      *                the packet to be instantiated
      * @throws IOException
+     *
+     *  读取leader响应数据
      */
     void readPacket(QuorumPacket pp) throws IOException {
         synchronized (leaderIs) {
@@ -190,6 +192,8 @@ public class Learner {
     
     /**
      * Returns the address of the node we think is the leader.
+     *
+     * 获取leader的 配置
      */
     protected QuorumServer findLeader() {
         QuorumServer leaderServer = null;
@@ -219,9 +223,12 @@ public class Learner {
      * <li>if there is an authentication failure while connecting to leader</li>
      * @throws ConnectException
      * @throws InterruptedException
+     *
+     * 与leader建立socket连接
      */
     protected void connectToLeader(InetSocketAddress addr, String hostname)
             throws IOException, ConnectException, InterruptedException {
+        LOG.info("{} 与 leader[{}:{}] 建立连接",self.getMyid(),hostname,addr.getPort());
         sock = new Socket();        
         sock.setSoTimeout(self.tickTime * self.initLimit);
         for (int tries = 0; tries < 5; tries++) {
@@ -275,8 +282,9 @@ public class Learner {
         BinaryOutputArchive boa = BinaryOutputArchive.getArchive(bsid);
         boa.writeRecord(li, "LearnerInfo");
         qp.setData(bsid.toByteArray());
-        
+        //向leader发送数据
         writePacket(qp, true);
+        //读取leader响应数据
         readPacket(qp);        
         final long newEpoch = ZxidUtils.getEpochFromZxid(qp.getZxid());
 		if (qp.getType() == Leader.LEADERINFO) {
@@ -373,6 +381,7 @@ public class Learner {
             boolean isPreZAB1_0 = true;
             //If we are not going to take the snapshot be sure the transactions are not applied in memory
             // but written out to the transaction log
+            //快照和事务日志二选一???
             boolean writeToTxnLog = !snapshotNeeded;
             // we are now going to start getting transactions to apply followed by an UPTODATE
             outerLoop:

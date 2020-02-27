@@ -968,7 +968,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                         try {
                             roZkMgr.start();
                             setBCVote(null);
-                            // 开始leader选举,直到选出为止
+                            //开始leader选举,直到选出为止
                             setCurrentVote(makeLEStrategy().lookForLeader());
                         } catch (Exception e) {
                             LOG.warn("Unexpected exception",e);
@@ -982,6 +982,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                     } else {
                         try {
                             setBCVote(null);
+                            //开始leader选举,直到选出为止
                             setCurrentVote(makeLEStrategy().lookForLeader());
                         } catch (Exception e) {
                             LOG.warn("Unexpected exception", e);

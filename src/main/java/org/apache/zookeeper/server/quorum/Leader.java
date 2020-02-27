@@ -187,7 +187,10 @@ public class Leader {
             return forwardingFollowers.contains(peer);
         }        
     }
-    
+
+    /**
+     * 监听2888集群通讯端口
+     */
     ServerSocket ss;
 
     Leader(QuorumPeer self,LeaderZooKeeperServer zk) throws IOException {
@@ -325,6 +328,7 @@ public class Leader {
             try {
                 while (!stop) {
                     try{
+                        //接收2888端口通讯的socket连接
                         Socket s = ss.accept();
                         // start with the initLimit, once the ack is processed
                         // in LearnerHandler switch to the syncLimit
@@ -333,6 +337,7 @@ public class Leader {
 
                         BufferedInputStream is = new BufferedInputStream(
                                 s.getInputStream());
+                        //为socket启动一个线程
                         LearnerHandler fh = new LearnerHandler(s, is, Leader.this);
                         fh.start();
                     } catch (SocketException e) {
@@ -391,6 +396,7 @@ public class Leader {
 
             // Start thread that waits for connection requests from 
             // new followers.
+            // 启动监听2888端口,等待followers连接
             cnxAcceptor = new LearnerCnxAcceptor();
             cnxAcceptor.start();
             

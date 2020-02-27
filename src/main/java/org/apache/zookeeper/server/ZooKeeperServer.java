@@ -331,6 +331,9 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         }
     }
 
+    /**
+     * 生成快照
+     */
     public void takeSnapshot(){
 
         try {
@@ -794,6 +797,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
             touch(si.cnxn);
             boolean validpacket = Request.isValid(si.type);
             if (validpacket) {
+                LOG.info("请求放入RequestProcessor[{}]",this.firstProcessor.getClass().getSimpleName());
                 firstProcessor.processRequest(si);
                 if (si.cnxn != null) {
                     incInProcess();

@@ -395,6 +395,7 @@ public class FinalRequestProcessor implements RequestProcessor {
                     request.createTime, Time.currentElapsedTime());
 
         try {
+            //响应客户端
             cnxn.sendResponse(hdr, rsp, "response");
             if (closeSession) {
                 cnxn.sendCloseSession();

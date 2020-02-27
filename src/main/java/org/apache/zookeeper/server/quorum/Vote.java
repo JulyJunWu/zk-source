@@ -88,7 +88,7 @@ public class Vote {
     
     final private int version;
     /**
-     * 当前节点的myid
+     * 节点的myid
      */
     final private long id;
     /**
@@ -103,7 +103,7 @@ public class Vote {
     final private long peerEpoch;
 
     /**
-     * 当前节点的状态
+     * 节点的状态
      */
     final private ServerState state;
     

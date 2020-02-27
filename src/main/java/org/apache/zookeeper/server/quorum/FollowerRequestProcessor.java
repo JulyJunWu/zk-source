@@ -32,6 +32,8 @@ import org.apache.zookeeper.server.ZooTrace;
 /**
  * This RequestProcessor forwards any requests that modify the state of the
  * system to the Leader.
+ *
+ * 这个RequestProcessor把所有关于修改的请求都转发给 Leader
  */
 public class FollowerRequestProcessor extends ZooKeeperCriticalThread implements
         RequestProcessor {
@@ -68,6 +70,7 @@ public class FollowerRequestProcessor extends ZooKeeperCriticalThread implements
                 // We want to queue the request to be processed before we submit
                 // the request to the leader so that we are ready to receive
                 // the response
+                // CommitProcessor
                 nextProcessor.processRequest(request);
                 
                 // We now ship the request to the leader. As with all
@@ -87,6 +90,7 @@ public class FollowerRequestProcessor extends ZooKeeperCriticalThread implements
                 case OpCode.createSession:
                 case OpCode.closeSession:
                 case OpCode.multi:
+                    //将写请求转发给leader
                     zks.getFollower().request(request);
                     break;
                 }
@@ -99,6 +103,7 @@ public class FollowerRequestProcessor extends ZooKeeperCriticalThread implements
 
     public void processRequest(Request request) {
         if (!finished) {
+            LOG.info("{} add",this.getClass().getSimpleName());
             queuedRequests.add(request);
         }
     }

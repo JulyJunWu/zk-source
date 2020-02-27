@@ -87,7 +87,7 @@ public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable 
         thread = new ZooKeeperThread(this, "NIOServerCxn.Factory:" + addr);
         thread.setDaemon(true);
         maxClientCnxns = maxcc;
-        // 创建服务端socketChannel
+        // 创建服务端ServerSocketChannel
         this.ss = ServerSocketChannel.open();
         ss.socket().setReuseAddress(true);
         LOG.info("binding to port " + addr);
