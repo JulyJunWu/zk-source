@@ -573,7 +573,9 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     }
 
     private int electionType;
-
+    /**
+     * 选举的算法实现类
+     */
     Election electionAlg;
 
     ServerCnxnFactory cnxnFactory;
@@ -833,6 +835,9 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
                 this, new ZooKeeperServer.BasicDataTreeBuilder(), this.zkDb));
     }
 
+    /**
+     * 根据指定类型参数创建对应的选举算法  实现类
+     */
     protected Election createElectionAlgorithm(int electionAlgorithm){
         Election le=null;
                 

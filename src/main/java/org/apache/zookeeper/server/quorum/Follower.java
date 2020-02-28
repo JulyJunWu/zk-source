@@ -75,6 +75,7 @@ public class Follower extends Learner{
             try {
                 //与leader的集群通讯端口(默认2888)进行socket连接
                 connectToLeader(leaderServer.addr, leaderServer.hostname);
+                //将自身数据发送给leader
                 long newEpochZxid = registerWithLeader(Leader.FOLLOWERINFO);
 
                 //check to see if the leader zxid is lower than ours
@@ -85,6 +86,7 @@ public class Follower extends Learner{
                             + " is less than our accepted epoch " + ZxidUtils.zxidToString(self.getAcceptedEpoch()));
                     throw new IOException("Error: Epoch of leader is lower");
                 }
+                //同步数据
                 syncWithLeader(newEpochZxid);                
                 QuorumPacket qp = new QuorumPacket();
                 while (this.isRunning()) {

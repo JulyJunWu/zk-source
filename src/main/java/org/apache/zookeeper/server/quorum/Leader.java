@@ -252,6 +252,8 @@ public class Leader {
     /**
      * This message type is sent by the leader to indicate that the follower is
      * now uptodate andt can start responding to clients.
+     *
+     * follow可以向外提供服务的信号????
      */
     final static int UPTODATE = 12;
 
@@ -337,7 +339,7 @@ public class Leader {
 
                         BufferedInputStream is = new BufferedInputStream(
                                 s.getInputStream());
-                        //为socket启动一个线程
+                        //为follow的socket启动一个线程
                         LearnerHandler fh = new LearnerHandler(s, is, Leader.this);
                         fh.start();
                     } catch (SocketException e) {
@@ -461,7 +463,13 @@ public class Leader {
                 long zxid = Long.parseLong(initialZxid);
                 zk.setZxid((zk.getZxid() & 0xffffffff00000000L) | zxid);
             }
-            
+
+            /**
+             *
+             * leader是否接受client请求,默认为yes即leader可以接受client的连接
+             *
+             * 当节点数为>3时，建议关闭
+             */
             if (!System.getProperty("zookeeper.leaderServes", "yes").equals("no")) {
                 self.cnxnFactory.setZooKeeperServer(zk);
             }
@@ -873,6 +881,7 @@ public class Leader {
     }
     // VisibleForTesting
     protected Set<Long> connectingFollowers = new HashSet<Long>();
+
     public long getEpochToPropose(long sid, long lastAcceptedEpoch) throws InterruptedException, IOException {
         synchronized(connectingFollowers) {
             if (!waitingForNewEpoch) {
@@ -907,8 +916,10 @@ public class Leader {
     }
     // VisibleForTesting
     protected Set<Long> electingFollowers = new HashSet<Long>();
+
     // VisibleForTesting
     protected boolean electionFinished = false;
+
     public void waitForEpochAck(long id, StateSummary ss) throws IOException, InterruptedException {
         synchronized(electingFollowers) {
             if (electionFinished) {

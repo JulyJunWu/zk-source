@@ -247,7 +247,7 @@ public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable 
                             LOG.info("Accepted socket connection from "
                                      + sc.socket().getRemoteSocketAddress());
                             sc.configureBlocking(false);
-                            // 监听READ操作
+                            //监听READ操作
                             SelectionKey sk = sc.register(selector,
                                     SelectionKey.OP_READ);
                             // 包装SocketChannel

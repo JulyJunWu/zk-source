@@ -313,6 +313,7 @@ public class LearnerHandler extends ZooKeeperThread {
     @Override
     public void run() {
         try {
+            //leader保存follow的socket线程
             leader.addLearnerHandler(this);
             tickOfNextAckDeadline = leader.self.tick.get()
                     + leader.self.initLimit + leader.self.syncLimit;
@@ -323,6 +324,7 @@ public class LearnerHandler extends ZooKeeperThread {
 
             QuorumPacket qp = new QuorumPacket();
             ia.readRecord(qp, "packet");
+            //follow首次发送数据要么类型是 FOLLOWERINFO(follow), 要么是 OBSERVERINFO(观察者服务器)
             if(qp.getType() != Leader.FOLLOWERINFO && qp.getType() != Leader.OBSERVERINFO){
             	LOG.error("First packet " + qp.toString()
                         + " is not FOLLOWERINFO or OBSERVERINFO!");
@@ -330,13 +332,16 @@ public class LearnerHandler extends ZooKeeperThread {
             }
             byte learnerInfoData[] = qp.getData();
             if (learnerInfoData != null) {
+                //follow发的数据长度为8 , 也就是发了一个long类型的sid
             	if (learnerInfoData.length == 8) {
             		ByteBuffer bbsid = ByteBuffer.wrap(learnerInfoData);
             		this.sid = bbsid.getLong();
             	} else {
             		LearnerInfo li = new LearnerInfo();
             		ByteBufferInputStream.byteBuffer2Record(ByteBuffer.wrap(learnerInfoData), li);
+            		// follow 的 sid
             		this.sid = li.getServerid();
+            		// follow的协议版本
             		this.version = li.getProtocolVersion();
             	}
             } else {
@@ -345,7 +350,7 @@ public class LearnerHandler extends ZooKeeperThread {
 
             LOG.info("Follower sid: " + sid + " : info : "
                     + leader.self.quorumPeers.get(sid));
-                        
+            //如果是Observe服务器
             if (qp.getType() == Leader.OBSERVERINFO) {
                   learnerType = LearnerType.OBSERVER;
             }            
@@ -366,10 +371,13 @@ public class LearnerHandler extends ZooKeeperThread {
             } else {
                 byte ver[] = new byte[4];
                 ByteBuffer.wrap(ver).putInt(0x10000);
+                //向follow所在服务器发送 LEADERINFO命令 , 发送leader的最新newEpoch
                 QuorumPacket newEpochPacket = new QuorumPacket(Leader.LEADERINFO, ZxidUtils.makeZxid(newEpoch, 0), ver, null);
                 oa.writeRecord(newEpochPacket, "packet");
                 bufferedOutput.flush();
+
                 QuorumPacket ackEpochPacket = new QuorumPacket();
+                //阻塞等待LEADERINFO命令的follow响应命令ACKEPOCH
                 ia.readRecord(ackEpochPacket, "packet");
                 if (ackEpochPacket.getType() != Leader.ACKEPOCH) {
                     LOG.error(ackEpochPacket.toString()
@@ -514,6 +522,7 @@ public class LearnerHandler extends ZooKeeperThread {
                     Thread.currentThread().setName(
                             "Sender-" + sock.getRemoteSocketAddress());
                     try {
+                        //处理队列中的待发送数据
                         sendPackets();
                     } catch (InterruptedException e) {
                         LOG.warn("Unexpected interruption",e);
@@ -533,6 +542,7 @@ public class LearnerHandler extends ZooKeeperThread {
                 return;
             }
             LOG.info("Received NEWLEADER-ACK message from " + getSid());
+            //等待过半数的follow响应
             leader.waitForNewLeaderAck(getSid(), qp.getZxid());
 
             syncLimitCheck.start();
@@ -553,7 +563,7 @@ public class LearnerHandler extends ZooKeeperThread {
             // using the data
             //
             queuedPackets.add(new QuorumPacket(Leader.UPTODATE, -1, null, null));
-
+            //开始循环了
             while (true) {
                 qp = new QuorumPacket();
                 ia.readRecord(qp, "packet");
@@ -565,8 +575,8 @@ public class LearnerHandler extends ZooKeeperThread {
                 if (LOG.isTraceEnabled()) {
                     ZooTrace.logQuorumPacket(LOG, traceMask, 'i', qp);
                 }
+                //重新设置应答超时??
                 tickOfNextAckDeadline = leader.self.tick.get() + leader.self.syncLimit;
-
 
                 ByteBuffer bb;
                 long sessionId;

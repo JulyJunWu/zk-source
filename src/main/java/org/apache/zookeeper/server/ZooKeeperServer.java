@@ -145,6 +145,9 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
      * 正在processor链中处理的请求数量
      */
     private final AtomicInteger requestsInProcess = new AtomicInteger(0);
+    /**
+     * 如果是在Follower的服务器上,那么outstandingChanges和outstandingChangesForPath属性不使用
+     */
     final List<ChangeRecord> outstandingChanges = new ArrayList<ChangeRecord>();
     // this data structure must be accessed under the outstandingChanges lock
     final HashMap<String, ChangeRecord> outstandingChangesForPath =

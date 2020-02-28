@@ -34,6 +34,11 @@ import org.apache.zookeeper.server.ZooKeeperServerListener;
  * locally submitted requests. The trick is that locally submitted requests that
  * change the state of the system will come back as incoming committed requests,
  * so we need to match them up.
+ *
+ *   对请求进行筛选 , 如果是非写请求(读) 那么直接放入toProcess集合 , 下一轮直接传递给下一个处理链处理
+ *
+ *   如果是写请求,那么等待Leader的commit完成命令(保存在committedRequests),方可提交到toProcess集合
+ *
  */
 public class CommitProcessor extends ZooKeeperCriticalThread implements RequestProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(CommitProcessor.class);
@@ -45,6 +50,8 @@ public class CommitProcessor extends ZooKeeperCriticalThread implements RequestP
 
     /**
      * Requests that have been committed.
+     *
+     * 这边存的应该是从leader处响应的,已经处理完毕的写请求
      */
     LinkedList<Request> committedRequests = new LinkedList<Request>();
 
@@ -130,6 +137,7 @@ public class CommitProcessor extends ZooKeeperCriticalThread implements RequestP
                         case OpCode.setACL:
                         case OpCode.createSession:
                         case OpCode.closeSession:
+                            //写请求,赋值,跳出,等待committedRequests队列有值
                             nextPending = request;
                             break;
                         case OpCode.sync:
@@ -140,6 +148,7 @@ public class CommitProcessor extends ZooKeeperCriticalThread implements RequestP
                             }
                             break;
                         default:
+                            // 非写请求,直接加入队列
                             toProcess.add(request);
                         }
                     }

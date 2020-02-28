@@ -249,6 +249,7 @@ public class QuorumPeerConfig {
                         throw new ConfigException("Unrecognised peertype: " + value);
                     }
                 }
+                //如果是观察者服务器则不加入选举集合中
                 if (type == LearnerType.OBSERVER){
                     observers.put(Long.valueOf(sid), new QuorumServer(sid, hostname, port, electionPort, type));
                 } else {
