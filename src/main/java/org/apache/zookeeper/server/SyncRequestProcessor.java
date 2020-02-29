@@ -180,6 +180,7 @@ public class SyncRequestProcessor extends ZooKeeperCriticalThread implements Req
                         // flushes (writes), then just pass this to the next
                         // processor
                         if (nextProcessor != null) {
+                            //向leader或follower 应答
                             nextProcessor.processRequest(si);
                             if (nextProcessor instanceof Flushable) {
                                 ((Flushable)nextProcessor).flush();

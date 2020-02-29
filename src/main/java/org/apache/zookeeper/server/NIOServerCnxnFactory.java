@@ -258,7 +258,7 @@ public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable 
                         }
                         // 处理读写事件
                     } else if ((k.readyOps() & (SelectionKey.OP_READ | SelectionKey.OP_WRITE)) != 0) {
-                        LOG.info("处理客户端请求");
+                        LOG.info("处理客户端请求,监听端口[]",ss.getLocalAddress());
                         NIOServerCnxn c = (NIOServerCnxn) k.attachment();
                         c.doIO(k);
                     } else {
@@ -292,6 +292,7 @@ public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable 
             cnxns = (HashSet<NIOServerCnxn>)this.cnxns.clone();
         }
         // got to clear all the connections that we have in the selector
+        //断开所有的客户端连接
         for (NIOServerCnxn cnxn: cnxns) {
             try {
                 // don't hold this.cnxns lock as deadlock may occur

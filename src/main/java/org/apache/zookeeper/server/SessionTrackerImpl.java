@@ -164,8 +164,8 @@ public class SessionTrackerImpl extends ZooKeeperCriticalThread implements Sessi
                 }
                 SessionSet set;
                 set = sessionSets.remove(nextExpirationTime);
+                LOG.info("清理过期session数据 | 数量[{}]",set == null ? 0 :  set.sessions.size());
                 if (set != null) {
-                    LOG.info("清理过期session数据 | 数量[{}]",set.sessions.size());
                     for (SessionImpl s : set.sessions) {
                         //设置过期标识
                         setSessionClosing(s.sessionId);

@@ -90,7 +90,6 @@ public class Follower extends Learner{
                 syncWithLeader(newEpochZxid);                
                 QuorumPacket qp = new QuorumPacket();
                 while (this.isRunning()) {
-                    LOG.info("1111");
                     readPacket(qp);
                     processPacket(qp);
                 }
@@ -114,6 +113,8 @@ public class Follower extends Learner{
      * Examine the packet received in qp and dispatch based on its contents.
      * @param qp
      * @throws IOException
+     *
+     * 处理leader的请求
      */
     protected void processPacket(QuorumPacket qp) throws IOException{
         switch (qp.getType()) {
@@ -129,7 +130,9 @@ public class Follower extends Learner{
                         + " expected 0x"
                         + Long.toHexString(lastQueued + 1));
             }
+            //事务ID
             lastQueued = hdr.getZxid();
+            //写入日志
             fzk.logRequest(hdr, txn);
             break;
         case Leader.COMMIT:

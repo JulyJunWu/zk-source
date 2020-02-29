@@ -70,12 +70,19 @@ public class Request {
         this.authInfo = null;
     }
 
+    /**
+     * 该请求对应的sessionId
+     */
     public final long sessionId;
 
     public final int cxid;
-
+    /**
+     * 请求类型
+     */
     public final int type;
-
+    /**
+     * 请求的字节数据
+     */
     public final ByteBuffer request;
     /**
      * 客户端连接相关对象,如NioServerCnxn

@@ -176,6 +176,7 @@ public class Learner {
         oa.writeLong(request.sessionId);
         oa.writeInt(request.cxid);
         oa.writeInt(request.type);
+        //请求的字节数据处理
         if (request.request != null) {
             request.request.rewind();
             int len = request.request.remaining();

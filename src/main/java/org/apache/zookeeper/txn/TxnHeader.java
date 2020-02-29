@@ -23,6 +23,9 @@ import org.apache.jute.*;
 import org.apache.yetus.audience.InterfaceAudience;
 @InterfaceAudience.Public
 public class TxnHeader implements Record {
+  /**
+   * 就是sessionId
+   */
   private long clientId;
   private int cxid;
   private long zxid;

@@ -407,6 +407,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
 
     /**
      * The current tick
+     * 心跳次数???
      */
     protected AtomicInteger tick = new AtomicInteger();
 

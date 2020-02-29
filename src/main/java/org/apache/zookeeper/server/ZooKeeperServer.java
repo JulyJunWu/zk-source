@@ -118,10 +118,19 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
      *  内存数据库
      */
     private ZKDatabase zkDb;
+    /**
+     * 全局的事务ID？？？？
+     */
     private final AtomicLong hzxid = new AtomicLong(0);
     public final static Exception ok = new Exception("No prob");
     /**
-     * 请求处理链中第一个processor , 默认顺序是 PreRequestProcessor -> SyncRequestProcessor -> FinalRequestProcessor
+     * 请求处理链中第一个processor , 单机默认顺序是 PreRequestProcessor -> SyncRequestProcessor -> FinalRequestProcessor
+     *
+     *  Follow ： FollowRequestProcessor -> CommitRequestProcessor -> FinalRequestProcessor
+     *
+     *  Leader :  PrepRequestProcessor -> ProposalRequestProcessor -> CommitProcessor
+     *             -> ToBeAppliedRequestProcessor -> FinalRequestProcessor
+     *
      */
     protected RequestProcessor firstProcessor;
     /**
@@ -150,6 +159,10 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
      */
     final List<ChangeRecord> outstandingChanges = new ArrayList<ChangeRecord>();
     // this data structure must be accessed under the outstandingChanges lock
+    /**
+     *  outstandingChangesForPath在PrepRequestProcessor加入，
+     *  在FinalRequestProcessor处理
+     */
     final HashMap<String, ChangeRecord> outstandingChangesForPath =
         new HashMap<String, ChangeRecord>();
 
@@ -410,6 +423,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         }
         long id = cnxn.getSessionId();
         int to = cnxn.getSessionTimeout();
+        // 在Follow服务器上永远设计true
         if (!sessionTracker.touchSession(id, to)) {
             throw new MissingSessionException(
                     "No session with sessionid 0x" + Long.toHexString(id)
@@ -798,6 +812,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         }
         try {
             touch(si.cnxn);
+            //验证请求类型是否合理
             boolean validpacket = Request.isValid(si.type);
             if (validpacket) {
                 LOG.info("请求放入RequestProcessor[{}]",this.firstProcessor.getClass().getSimpleName());
@@ -1072,6 +1087,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
                 return;
             }
             else {
+                //事务ID暂未分配
                 Request si = new Request(cnxn, cnxn.getSessionId(), h.getXid(),
                   h.getType(), incomingBuffer, cnxn.getAuthInfo());
                 si.setOwner(ServerCnxn.me);

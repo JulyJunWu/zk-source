@@ -66,7 +66,9 @@ public class Leader {
 
     static public class Proposal {
         public QuorumPacket packet;
-
+        /**
+         * 存放已经应答的follow sid
+         */
         public HashSet<Long> ackSet = new HashSet<Long>();
 
         public Request request;
@@ -485,6 +487,7 @@ public class Leader {
             boolean tickSkip = true;
     
             while (true) {
+                //默认 tickTime / 2 的时间, 也就是1秒一次心跳
                 Thread.sleep(self.tickTime / 2);
                 if (!tickSkip) {
                     self.tick.incrementAndGet();
@@ -500,7 +503,9 @@ public class Leader {
                     if (f.synced() && f.getLearnerType() == LearnerType.PARTICIPANT) {
                         syncedSet.add(f.getSid());
                     }
+                    //发送心跳
                     f.ping();
+                    LOG.info("Leader 发送心跳");
                 }
 
                 // check leader running status
@@ -508,7 +513,7 @@ public class Leader {
                     shutdown("Unexpected internal error");
                     return;
                 }
-
+                //每2次检查一次服务器数量是否过半
               if (!tickSkip && !self.getQuorumVerifier().containsQuorum(syncedSet)) {
                 //if (!tickSkip && syncedCount < self.quorumPeers.size() / 2) {
                     // Lost quorum, shutdown
@@ -622,7 +627,8 @@ public class Leader {
             LOG.debug("Count for zxid: 0x{} is {}",
                     Long.toHexString(zxid), p.ackSet.size());
         }
-        if (self.getQuorumVerifier().containsQuorum(p.ackSet)){             
+        //提议 应答是否过半
+        if (self.getQuorumVerifier().containsQuorum(p.ackSet)){
             if (zxid != lastCommitted+1) {
                 LOG.warn("Commiting zxid 0x{} from {} not first!",
                         Long.toHexString(zxid), followerAddr);
@@ -636,7 +642,9 @@ public class Leader {
             if (p.request == null) {
                 LOG.warn("Going to commmit null request for proposal: {}", p);
             }
+            //向所有的follower发送commit命令
             commit(zxid);
+            //暂时忽略观察者服务器
             inform(p);
             zk.commitProcessor.commit(p.request);
             if(pendingSyncs.containsKey(zxid)){
@@ -706,6 +714,7 @@ public class Leader {
      * 
      * @param qp
      *                the packet to be sent
+     *                遍历所有的Follow 发送建议
      */
     void sendPacket(QuorumPacket qp) {
         synchronized (forwardingFollowers) {

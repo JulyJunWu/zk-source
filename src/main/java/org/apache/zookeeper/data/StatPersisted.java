@@ -44,7 +44,7 @@ public class StatPersisted implements Record {
    */
   private int version;
   /**
-   * 子节点的版本号,子节点每变动一次都会自增
+   * 子节点的版本号,子节点新增都会自增
    */
   private int cversion;
   private int aversion;

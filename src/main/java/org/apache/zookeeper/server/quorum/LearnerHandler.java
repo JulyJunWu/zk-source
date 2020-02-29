@@ -90,6 +90,8 @@ public class LearnerHandler extends ZooKeeperThread {
     
     /**
      * The packets to be sent to the learner
+     *
+     * 等待该线程发送给Follow的队列
      */
     final LinkedBlockingQueue<QuorumPacket> queuedPackets =
         new LinkedBlockingQueue<QuorumPacket>();
@@ -633,9 +635,12 @@ public class LearnerHandler extends ZooKeeperThread {
                     qp.setData(bos.toByteArray());
                     queuedPackets.add(qp);
                     break;
-                case Leader.REQUEST:                    
+                case Leader.REQUEST:
+                    //获取请求的数据
                     bb = ByteBuffer.wrap(qp.getData());
+                    //请求对应的sessionId
                     sessionId = bb.getLong();
+                    //事务ID，一般情况应该是没有的,理论为0，在集群下，应该由leader来进行分配
                     cxid = bb.getInt();
                     type = bb.getInt();
                     bb = bb.slice();
@@ -645,6 +650,7 @@ public class LearnerHandler extends ZooKeeperThread {
                     } else {
                         si = new Request(null, sessionId, cxid, type, bb, qp.getAuthinfo());
                     }
+                    //设置该请求对应的拥有者
                     si.setOwner(this);
                     leader.zk.submitRequest(si);
                     break;

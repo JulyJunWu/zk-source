@@ -333,6 +333,8 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
      * @param zxid
      * @param request
      * @param record
+     *
+     *  验证、包装、将请求放到指定的集合中，完事
      */
     @SuppressWarnings("unchecked")
     protected void pRequest2Txn(int type, long zxid, Request request, Record record, boolean deserialize)
@@ -361,11 +363,13 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
                     throw new KeeperException.InvalidACLException(path);
                 }
                 String parentPath = path.substring(0, lastSlash);
+                //父类节点是否能找到,找不到则报错,创建节点必须保证父类节点存在
                 ChangeRecord parentRecord = getRecordForPath(parentPath);
-
+                //检查下访问的权限
                 checkACL(zks, parentRecord.acl, ZooDefs.Perms.CREATE,
                         request.authInfo);
                 int parentCVersion = parentRecord.stat.getCversion();
+                //创建节点的类型（持久/持久有序/临时/临时有序）
                 CreateMode createMode =
                     CreateMode.fromFlag(createRequest.getFlags());
                 //如果是顺序节点的话
@@ -391,13 +395,15 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
                         listACL,
                         createMode.isEphemeral(), newCversion);
                 StatPersisted s = new StatPersisted();
+                //是否临时节点
                 if (createMode.isEphemeral()) {
                     s.setEphemeralOwner(request.sessionId);
                 }
                 parentRecord = parentRecord.duplicate(request.hdr.getZxid());
                 parentRecord.childCount++;
-                //父节点的StatPersisted的版本加一(这个版本代表子节点的版本号,子节点变动都会进行自增)
+                //父节点的StatPersisted的版本加一(这个版本代表子节点的版本号,子节点新增都会进行自增)
                 parentRecord.stat.setCversion(newCversion);
+                //加入到操作的集合中，等待其他线程去处理
                 addChangeRecord(parentRecord);
                 addChangeRecord(new ChangeRecord(request.hdr.getZxid(), path, s,
                         0, listACL));
@@ -567,6 +573,7 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
                 // 创建
                 case OpCode.create:
                 CreateRequest createRequest = new CreateRequest();
+                //请求放入指定集合中，等待处理
                 pRequest2Txn(request.type, zks.getNextZxid(), request, createRequest, true);
                 break;
                 //删除
@@ -711,8 +718,9 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
                 request.txn = new ErrorTxn(Code.MARSHALLINGERROR.intValue());
             }
         }
+        //设置对应请求的事务ID
         request.zxid = zks.getZxid();
-
+        //交给下一个RequestProcessor处理
         nextProcessor.processRequest(request);
     }
 

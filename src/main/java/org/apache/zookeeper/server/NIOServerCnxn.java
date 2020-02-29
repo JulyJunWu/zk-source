@@ -90,10 +90,14 @@ public class NIOServerCnxn extends ServerCnxn {
     /**
      * This is the id that uniquely identifies the session of a client. Once
      * this session is no longer active, the ephemeral nodes will go away.
+     *
+     *
+     * 该client对应的sessionId
      */
     long sessionId;
 
     static long nextSessionId = 1;
+
     int outstandingLimit = 1;
 
     public NIOServerCnxn(ZooKeeperServer zk, SocketChannel sock,
