@@ -393,6 +393,7 @@ public class LearnerHandler extends ZooKeeperThread {
             peerLastZxid = ss.getLastZxid();
             
             /* the default to send to the follower */
+            //请求命令
             int packetToSend = Leader.SNAP;
             long zxidToSend = 0;
             long leaderLastZxid = 0;
@@ -414,7 +415,7 @@ public class LearnerHandler extends ZooKeeperThread {
                         +" peerLastZxid=0x"+Long.toHexString(peerLastZxid));
 
                 LinkedList<Proposal> proposals = leader.zk.getZKDatabase().getCommittedLog();
-
+                //follower与leader的最新事务ID一致,所以数据是一样,不需要同步,发送空的不同
                 if (peerLastZxid == leader.zk.getZKDatabase().getDataTreeLastProcessedZxid()) {
                     // Follower is already sync with us, send empty diff
                     LOG.info("leader and follower are in sync, zxid=0x{}",
@@ -423,6 +424,7 @@ public class LearnerHandler extends ZooKeeperThread {
                     zxidToSend = peerLastZxid;
                 } else if (proposals.size() != 0) {
                     LOG.debug("proposal size is {}", proposals.size());
+                    //说明follower的最新事务ID处于Leader的最小和最大之间,那么只需要同步一些数据即可
                     if ((maxCommittedLog >= peerLastZxid)
                             && (minCommittedLog <= peerLastZxid)) {
                         LOG.debug("Sending proposals to follower");
@@ -466,6 +468,7 @@ public class LearnerHandler extends ZooKeeperThread {
                                 queuePacket(qcommit);
                             }
                         }
+                        //如果follower的最新zxid大于leader的最大zxid,那么follower需要对自身数据进行截断到与leader一致
                     } else if (peerLastZxid > maxCommittedLog) {
                         LOG.debug("Sending TRUNC to follower zxidToSend=0x{} updates=0x{}",
                                 Long.toHexString(maxCommittedLog),
@@ -483,17 +486,19 @@ public class LearnerHandler extends ZooKeeperThread {
                 }               
 
                 LOG.info("Sending " + Leader.getPacketType(packetToSend));
+                //根据follower的事务ID与leader的差距,往LearnHandler队列的发送数据(暂时还没有发送出去,只是缓存在队列,需要等待线程启动)
                 leaderLastZxid = leader.startForwarding(this, updates);
 
             } finally {
                 rl.unlock();
             }
-
+            // 当客户端接收到这个命令时,就代表着数据同步完成
              QuorumPacket newLeaderQP = new QuorumPacket(Leader.NEWLEADER,
                     ZxidUtils.makeZxid(newEpoch, 0), null, null);
              if (getVersion() < 0x10000) {
                 oa.writeRecord(newLeaderQP, "packet");
             } else {
+                //加入待发送队列中
                 queuedPackets.add(newLeaderQP);
             }
             bufferedOutput.flush();
@@ -501,10 +506,12 @@ public class LearnerHandler extends ZooKeeperThread {
             if (packetToSend == Leader.SNAP) {
                 zxidToSend = leader.zk.getZKDatabase().getDataTreeLastProcessedZxid();
             }
+            // 发送DIFF/SNAP/TRUNC中其中一个命令,以及leader的最大事务ID;
             oa.writeRecord(new QuorumPacket(packetToSend, zxidToSend, null, null), "packet");
             bufferedOutput.flush();
             
             /* if we are not truncating or sending a diff just send a snapshot */
+            // 如果是需要同步所有数据的话
             if (packetToSend == Leader.SNAP) {
                 LOG.info("Sending snapshot last zxid of peer is 0x"
                         + Long.toHexString(peerLastZxid) + " " 
@@ -519,6 +526,7 @@ public class LearnerHandler extends ZooKeeperThread {
             bufferedOutput.flush();
             
             // Start sending packets
+            // 这边就开启了处理队列(queuedPackets)中的数据的线程
             new Thread() {
                 public void run() {
                     Thread.currentThread().setName(
@@ -563,7 +571,7 @@ public class LearnerHandler extends ZooKeeperThread {
             // Mutation packets will be queued during the serialize,
             // so we need to mark when the peer can actually start
             // using the data
-            //
+            // 告知follower可以正常提供服务了
             queuedPackets.add(new QuorumPacket(Leader.UPTODATE, -1, null, null));
             //开始循环了
             while (true) {

@@ -90,7 +90,9 @@ public class Request {
     public final ServerCnxn cnxn;
 
     public TxnHeader hdr;
-
+    /**
+     * 存放请求的路径/数据等
+     */
     public Record txn;
 
     public long zxid = -1;

@@ -18,21 +18,17 @@
 
 package org.apache.zookeeper.server;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map.Entry;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.SessionExpiredException;
 import org.apache.zookeeper.common.Time;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This is a full featured SessionTracker. It tracks session in grouped by tick
@@ -81,9 +77,15 @@ public class SessionTrackerImpl extends ZooKeeperCriticalThread implements Sessi
         public boolean isClosing() { return isClosing; }
     }
 
+    /**
+     * sessionId生成算法
+     * @param id
+     * @return
+     */
     public static long initializeNextSession(long id) {
         long nextSid = 0;
         nextSid = (Time.currentElapsedTime() << 24) >>> 8;
+        //生成的session的高八位(56 -64位置)其实就是serverId ,48-56是0,后16位其实都是0,从16-48才是时间戳
         nextSid =  nextSid | (id <<56);
         return nextSid;
     }

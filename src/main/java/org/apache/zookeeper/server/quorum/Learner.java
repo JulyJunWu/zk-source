@@ -288,7 +288,7 @@ public class Learner {
         qp.setData(bsid.toByteArray());
         //向leader发送数据
         writePacket(qp, true);
-        //等待leader的响应,读取leader响应数据
+        //等待leader的响应,读取leader响应数据LEADERINFO命令
         readPacket(qp);
         //leader的最新Epoch
         final long newEpoch = ZxidUtils.getEpochFromZxid(qp.getZxid());
@@ -343,7 +343,7 @@ public class Learner {
         LinkedList<Long> packetsCommitted = new LinkedList<Long>();
         LinkedList<PacketInFlight> packetsNotCommitted = new LinkedList<PacketInFlight>();
         synchronized (zk) {
-            //代表本节点的最新事务id与leader一致
+            //代表本节点的最新事务id与leader一致或者说需要拉取leader一些数据同步
             if (qp.getType() == Leader.DIFF) {
                 LOG.info("Getting a diff from the leader 0x{}", Long.toHexString(qp.getZxid()));
                 snapshotNeeded = false;
@@ -448,6 +448,7 @@ public class Learner {
                         packetsCommitted.add(qp.getZxid());
                     }
                     break;
+                    //当接收到Leader的该请求,表示前期准备阶段已经完成,现在准备向外提供服务
                 case Leader.UPTODATE:
                     if (isPreZAB1_0) {
                         zk.takeSnapshot();
@@ -477,6 +478,7 @@ public class Learner {
                     }
                     writeToTxnLog = true; //Anything after this needs to go to the transaction log, not applied directly in memory
                     isPreZAB1_0 = false;
+                    //响应leader请求,表示数据同步完成
                     writePacket(new QuorumPacket(Leader.ACK, newLeaderZxid, null, null), true);
                     break;
                 }
@@ -485,6 +487,7 @@ public class Learner {
         ack.setZxid(ZxidUtils.makeZxid(newEpoch, 0));
         writePacket(ack, true);
         sock.setSoTimeout(self.tickTime * self.syncLimit);
+        //开始对外服务???
         zk.startup();
         /*
          * Update the election vote here to ensure that all members of the
@@ -498,9 +501,11 @@ public class Learner {
         // We need to log the stuff that came in between the snapshot and the uptodate
         if (zk instanceof FollowerZooKeeperServer) {
             FollowerZooKeeperServer fzk = (FollowerZooKeeperServer)zk;
+            //将请求写入事务日志
             for(PacketInFlight p: packetsNotCommitted) {
                 fzk.logRequest(p.hdr, p.rec);
             }
+            //提交请求,落到磁盘
             for(Long zxid: packetsCommitted) {
                 fzk.commit(zxid);
             }

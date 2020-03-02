@@ -51,7 +51,7 @@ public class CommitProcessor extends ZooKeeperCriticalThread implements RequestP
     /**
      * Requests that have been committed.
      *
-     * 这边存的应该是从leader处响应的,已经处理完毕的写请求
+     * 这边存的应该是从leader处响应的,已经处理完毕的写请求的回应
      */
     LinkedList<Request> committedRequests = new LinkedList<Request>();
 
@@ -77,6 +77,7 @@ public class CommitProcessor extends ZooKeeperCriticalThread implements RequestP
     @Override
     public void run() {
         try {
+            //需要等待Leader的回复
             Request nextPending = null;            
             while (!finished) {
                 int len = toProcess.size();
