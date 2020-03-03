@@ -53,4 +53,15 @@ zk版本基于 : 3.4.13
               
       
       
-      
+zookeeper涉及的设计模式:
+   观察者模式: 
+      这个无需多说,Watch机制
+   策略模式:
+      对于选举使用哪个算法,根据类型进行创建对应的算法类
+   工厂模式:
+      创建监听客户端连接的工厂,ServerCnxnFactory , 实现类为NioServerCnxnFactory和NettyServerCnxnFactory实现
+   拦截器链/责任链模式:
+      参考RequestProcessor处理器链
+   待发现....
+   
+        

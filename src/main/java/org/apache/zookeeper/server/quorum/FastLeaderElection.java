@@ -220,7 +220,8 @@ public class FastLeaderElection implements Election {
      * 生产者是: main线程,就是lookForLeader中的while循环产生
      * 消费者是: WorkSender线程,不断从队列中拉取数据,分门别类的将数据发送到指定的sid 数组队列, 等待对应的SendWorker处理
      *           sendqueue
-     *       /--------------\
+     *       /-----------------------------\
+     *                                      \
      *   lookForLeader循环中不断offer       WorkerSend poll
      */
     LinkedBlockingQueue<ToSend> sendqueue;

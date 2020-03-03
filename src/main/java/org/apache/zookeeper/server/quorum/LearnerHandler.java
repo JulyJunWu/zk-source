@@ -55,6 +55,8 @@ import org.slf4j.LoggerFactory;
  * There will be an instance of this class created by the Leader for each
  * learner. All communication with a learner is handled by this
  * class.
+ *
+ *  一个 Follower 连接 含有 : LearnerHandler(接收数据线程) 匿名发送线程(处理待发送数据队列的线程)
  */
 public class LearnerHandler extends ZooKeeperThread {
     private static final Logger LOG = LoggerFactory.getLogger(LearnerHandler.class);
