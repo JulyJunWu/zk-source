@@ -32,6 +32,8 @@ import org.slf4j.LoggerFactory;
  * 'autopurge.purgeInterval'. It keeps the most recent
  * 'autopurge.snapRetainCount' number of snapshots and corresponding transaction
  * logs.
+ *
+ * 清理事务日志和快照的管理工具(默认不开启)
  */
 public class DatadirCleanupManager {
 
@@ -44,16 +46,29 @@ public class DatadirCleanupManager {
         NOT_STARTED, STARTED, COMPLETED;
     }
 
+    /**
+     * 当前管理器的状态
+     */
     private PurgeTaskStatus purgeTaskStatus = PurgeTaskStatus.NOT_STARTED;
-
+    /**
+     * 快照的路径
+     */
     private final String snapDir;
-
+    /**
+     * 事务日志路径
+     */
     private final String dataLogDir;
-
+    /**
+     * 保留的数量??? 默认是3
+     */
     private final int snapRetainCount;
-
+    /**
+     * 清理的间隔时间
+     */
     private final int purgeInterval;
-
+    /**
+     * 定时器
+     */
     private Timer timer;
 
     /**
@@ -97,15 +112,18 @@ public class DatadirCleanupManager {
             return;
         }
         // Don't schedule the purge task with zero or negative purge interval.
+        // 默认是不开启的,只有间隔时间大于0方可开启自动清理
         if (purgeInterval <= 0) {
             LOG.info("Purge task is not scheduled.");
             return;
         }
 
         timer = new Timer("PurgeTask", true);
+        //清理任务
         TimerTask task = new PurgeTask(dataLogDir, snapDir, snapRetainCount);
+        //设置定时器
         timer.scheduleAtFixedRate(task, 0, TimeUnit.HOURS.toMillis(purgeInterval));
-
+        //更改状态
         purgeTaskStatus = PurgeTaskStatus.STARTED;
     }
 
