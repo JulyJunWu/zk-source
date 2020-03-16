@@ -650,7 +650,6 @@ public class LearnerHandler extends ZooKeeperThread {
                     bb = ByteBuffer.wrap(qp.getData());
                     //请求对应的sessionId
                     sessionId = bb.getLong();
-                    //事务ID，一般情况应该是没有的,理论为0，在集群下，应该由leader来进行分配
                     cxid = bb.getInt();
                     type = bb.getInt();
                     bb = bb.slice();

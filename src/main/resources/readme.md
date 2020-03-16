@@ -64,4 +64,11 @@ zookeeper涉及的设计模式:
       参考RequestProcessor处理器链
    待发现....
    
+参数调优:
+  1.tickTime：心跳间隔时间,默认是2000ms
+    客户端与服务端心跳的话则是2000 , 如果是leader与follower心跳的话则是2000ms/2 , 源码所在Leader#491
+  2.leaderServes,对应的Java系统属性：zookeeper.leaderServes
+    用于配置Leader是否接受客户端连接，默认值是“yes”，即Leader将会接受客户端连接。
+    在ZooKeeper中，Leader服务器主要协调事务更新请求。对于事务更新请求吞吐很高而读取请求吞吐很低的情况可以配置Leader不接受客户端连接，这样就可以专注于协调工作。
+
         

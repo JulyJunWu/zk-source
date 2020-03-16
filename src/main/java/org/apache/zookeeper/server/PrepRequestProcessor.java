@@ -290,6 +290,9 @@ public class PrepRequestProcessor extends ZooKeeperCriticalThread implements
         }
     }
 
+    /**
+     * ACL权限检查
+     */
     static void checkACL(ZooKeeperServer zks, List<ACL> acl, int perm,
             List<Id> ids) throws KeeperException.NoAuthException {
         if (skipACL) {

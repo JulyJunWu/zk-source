@@ -118,6 +118,9 @@ public class FileTxnLog implements TxnLog {
     volatile FileOutputStream fos = null;
 
     File logDir;
+    /**
+     * 日志提交的时候是否需要立即刷到磁盘,默认为yes
+     */
     private final boolean forceSync = !System.getProperty("zookeeper.forceSync", "yes").equals("no");;
     long dbId;
     private LinkedList<FileOutputStream> streamsToFlush =

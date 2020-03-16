@@ -35,6 +35,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * 主要是保存节点的ACL权限的一些数据
+ */
 public class ReferenceCountedACLCache {
     private static final Logger LOG = LoggerFactory.getLogger(ReferenceCountedACLCache.class);
 

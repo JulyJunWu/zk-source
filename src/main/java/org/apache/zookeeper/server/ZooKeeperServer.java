@@ -370,6 +370,10 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         return hzxid.get();
     }
 
+    /**
+     * 通过CAS获取全局唯一的事务ID
+     * @return
+     */
     long getNextZxid() {
         return hzxid.incrementAndGet();
     }

@@ -291,6 +291,7 @@ public class FinalRequestProcessor implements RequestProcessor {
                 if (n == null) {
                     throw new KeeperException.NoNodeException();
                 }
+                //检查是否有权限
                 PrepRequestProcessor.checkACL(zks, zks.getZKDatabase().aclForNode(n),
                         ZooDefs.Perms.READ,
                         request.authInfo);

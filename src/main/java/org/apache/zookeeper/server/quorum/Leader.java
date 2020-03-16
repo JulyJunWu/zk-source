@@ -600,13 +600,14 @@ public class Leader {
              */
             return;
         }
-    
+        //如果当前提议集合为空,直接return
         if (outstandingProposals.size() == 0) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("outstanding is 0");
             }
             return;
         }
+        //该事务ID已经被提交了(或者说已经过期了)
         if (lastCommitted >= zxid) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("proposal has already been committed, pzxid: 0x{} zxid: 0x{}",
@@ -615,25 +616,27 @@ public class Leader {
             // The proposal has already been committed
             return;
         }
+        //取得提议的数据
         Proposal p = outstandingProposals.get(zxid);
         if (p == null) {
             LOG.warn("Trying to commit future proposal: zxid 0x{} from {}",
                     Long.toHexString(zxid), followerAddr);
             return;
         }
-        
+        //将当前sid加入到已响应的集合中
         p.ackSet.add(sid);
         if (LOG.isDebugEnabled()) {
             LOG.debug("Count for zxid: 0x{} is {}",
                     Long.toHexString(zxid), p.ackSet.size());
         }
-        //提议 应答是否过半
+        //提议应答是否超过 半数+1
         if (self.getQuorumVerifier().containsQuorum(p.ackSet)){
             if (zxid != lastCommitted+1) {
                 LOG.warn("Commiting zxid 0x{} from {} not first!",
                         Long.toHexString(zxid), followerAddr);
                 LOG.warn("First is 0x{}", Long.toHexString(lastCommitted + 1));
             }
+            //从提议集合中移除该集合
             outstandingProposals.remove(zxid);
             if (p.request != null) {
                 toBeApplied.add(p);
@@ -646,6 +649,7 @@ public class Leader {
             commit(zxid);
             //暂时忽略观察者服务器
             inform(p);
+            //leader节点提交
             zk.commitProcessor.commit(p.request);
             if(pendingSyncs.containsKey(zxid)){
                 for(LearnerSyncRequest r: pendingSyncs.remove(zxid)) {
@@ -733,6 +737,9 @@ public class Leader {
         }
     }
 
+    /**
+     * 最后提交的事务id(正常都是最大的)
+     */
     long lastCommitted = -1;
 
     /**
