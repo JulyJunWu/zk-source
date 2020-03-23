@@ -94,6 +94,9 @@ public class QuorumCnxManager {
      */
     final long mySid;
     final int socketTimeout;
+    /**
+     * key = sid , value = 节点的地址和 端口
+     */
     final Map<Long, QuorumPeer.QuorumServer> view;
     final boolean tcpKeepAlive = Boolean.getBoolean("zookeeper.tcpKeepAlive");
     final boolean listenOnAllIPs;
@@ -118,6 +121,9 @@ public class QuorumCnxManager {
      *   RecvWorker : 处理该Socket对象的接收数据
      */
     final ConcurrentHashMap<Long, SendWorker> senderWorkerMap;
+    /**
+     * key=sid , value=需要发送的数据
+     */
     final ConcurrentHashMap<Long, ArrayBlockingQueue<ByteBuffer>> queueSendMap;
     /**
      * 存储最近一次向目标sid发送的数据
@@ -346,10 +352,12 @@ public class QuorumCnxManager {
         DataInputStream din = null;
         try {
             // Sending id and challenge
+            // 包装的输出流
             dout = new DataOutputStream(sock.getOutputStream());
+            // 直接发送本节点的sid
             dout.writeLong(this.mySid);
             dout.flush();
-
+            // 包装的输入流
             din = new DataInputStream(
                     new BufferedInputStream(sock.getInputStream()));
         } catch (IOException e) {
@@ -359,6 +367,7 @@ public class QuorumCnxManager {
         }
 
         // authenticate learner
+        // 默认不启用安全验证
         authLearner.authenticate(sock, view.get(sid).hostname);
 
         // If lost the challenge, then drop the new connection
@@ -370,7 +379,10 @@ public class QuorumCnxManager {
             closeSocket(sock);
             // Otherwise proceed with the connection
         } else {
+            // 说明本节点的sid大
+            //建立该sock数据发送线程
             SendWorker sw = new SendWorker(sock, sid);
+            //建立该sock数据接收线程
             RecvWorker rw = new RecvWorker(sock, din, sid, sw);
             sw.setRecv(rw);
 
@@ -582,6 +594,7 @@ public class QuorumCnxManager {
                 electionAddr = view.get(sid).electionAddr;
             } else {
                 LOG.warn("Invalid server id: " + sid);
+                // 不存在该sid数据,非法的,直接return
                 return;
             }
             try {
@@ -589,7 +602,9 @@ public class QuorumCnxManager {
                 LOG.info("Opening channel to server " + sid);
                 //创建一个客户端与目标sid服务器选举端口通讯
                 Socket sock = new Socket();
+                // 设置socket属性
                 setSockOpts(sock);
+                // 连接sid对应的选举地址
                 sock.connect(view.get(sid).electionAddr, cnxTO);
                 LOG.info("Connected to server " + sid);
 
@@ -623,6 +638,7 @@ public class QuorumCnxManager {
                 // to connect to the server because the underlying IP address
                 // changed. Resolve the hostname again just in case.
                 if (view.containsKey(sid)) {
+                    // 重建地址
                     view.get(sid).recreateSocketAddresses();
                 }
             }
@@ -693,10 +709,15 @@ public class QuorumCnxManager {
      * Helper method to set socket options.
      *
      * @param sock Reference to socket
+     *
+     *  设置Socket一些属性
      */
     private void setSockOpts(Socket sock) throws SocketException {
+        // 禁止启用Nagle算法
         sock.setTcpNoDelay(true);
+        // 是否长连接
         sock.setKeepAlive(tcpKeepAlive);
+        // 超时时间
         sock.setSoTimeout(socketTimeout);
     }
 
@@ -931,6 +952,8 @@ public class QuorumCnxManager {
         synchronized void send(ByteBuffer b) throws IOException {
             byte[] msgBytes = new byte[b.capacity()];
             try {
+                //这个操作有点不明白了,验证是否溢出??? 为什么不直接验证remain和长度或者capacity????
+                // TODO::::  疑问!!! 感觉代码时多余的!!!
                 b.position(0);
                 b.get(msgBytes);
             } catch (BufferUnderflowException be) {
@@ -962,7 +985,7 @@ public class QuorumCnxManager {
                  * message than that stored in lastMessage. To avoid sending
                  * stale message, we should send the message in the send queue.
                  */
-                //获取自己对应需要处理的发送数据
+                //获取自己sid对应需要处理的发送数据
                 ArrayBlockingQueue<ByteBuffer> bq = queueSendMap.get(sid);
                 if (bq == null || isSendQueueEmpty(bq)) {
                     ByteBuffer b = lastMessageSent.get(sid);
@@ -993,7 +1016,7 @@ public class QuorumCnxManager {
                         }
 
                         if (b != null) {
-                            //设置为最近发送的数据
+                            //设置为最后发送的数据
                             lastMessageSent.put(sid, b);
                             //发送数据
                             send(b);
@@ -1215,6 +1238,11 @@ public class QuorumCnxManager {
         return recvQueue.poll(timeout, unit);
     }
 
+    /**
+     * 是否存在 该节点的对应处理socket数据的线程
+     * @param peerSid
+     * @return
+     */
     public boolean connectedToPeer(long peerSid) {
         return senderWorkerMap.get(peerSid) != null;
     }

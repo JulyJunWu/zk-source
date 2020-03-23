@@ -169,6 +169,10 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
          * unmodified, unless they were never set. If this.addr is null, then
          * it is set with an unresolved InetSocketAddress object. this.electionAddr
          * is handled similarly.
+         *
+         *  1.重新解析IP
+         *  2.重新创建新的选举地址
+         *  3.重新创建集群通讯地址
          */
         public void recreateSocketAddresses() {
             InetAddress address = null;
@@ -239,11 +243,11 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
         }
 
         /**
-         * 集群通讯地址
+         * 集群通讯地址 2888
          */
         public InetSocketAddress addr;
         /**
-         * 集群选举地址
+         * 集群选举地址 3888
          */
         public InetSocketAddress electionAddr;
         

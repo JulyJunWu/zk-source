@@ -45,6 +45,9 @@ import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
 
 @InterfaceAudience.Public
+/**
+ * 配置类
+ */
 public class QuorumPeerConfig {
     private static final Logger LOG = LoggerFactory.getLogger(QuorumPeerConfig.class);
     /**
