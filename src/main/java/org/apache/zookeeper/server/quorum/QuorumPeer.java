@@ -96,6 +96,9 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     QuorumBean jmxQuorumBean;
     LocalPeerBean jmxLocalPeerBean;
     LeaderElectionBean jmxLeaderElectionBean;
+    /**
+     * 负责选举时的收发消息管理 , 监听等等
+     */
     QuorumCnxManager qcm;
     QuorumAuthServer authServer;
     QuorumAuthLearner authLearner;
@@ -235,8 +238,13 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
             return addresses[0];
         }
 
+        /**
+         * 集群通讯地址
+         */
         public InetSocketAddress addr;
-
+        /**
+         * 集群选举地址
+         */
         public InetSocketAddress electionAddr;
         
         public String hostname;
@@ -666,7 +674,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
         loadDataBase();
         // 启动监听客户端(2181)
         cnxnFactory.start();
-        //开始选举
+        //准备选举算法等
         startLeaderElection();
         //启动线程
         super.start();
@@ -738,6 +746,11 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
         responder.running = false;
         responder.interrupt();
     }
+
+    /**
+     * 1.获取集群通讯地址
+     * 2.创建选举算法实现类(FastLeaderElection)
+     */
     synchronized public void startLeaderElection() {
     	try {
     		currentVote = new Vote(myid, getLastLoggedZxid(), getCurrentEpoch());
@@ -846,7 +859,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     }
 
     /**
-     * 根据指定类型参数创建对应的选举算法  实现类
+     * 根据指定类型参数创建对应的选举算法  实现类 , 默认是3
      */
     protected Election createElectionAlgorithm(int electionAlgorithm){
         Election le=null;
@@ -1413,9 +1426,13 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
 
     private long acceptedEpoch = -1;
     private long currentEpoch = -1;
-
+    /**
+     * 记录当前轮次的文件名
+     */
 	public static final String CURRENT_EPOCH_FILENAME = "currentEpoch";
-
+    /**
+     * 记录接受轮次的文件名
+     */
 	public static final String ACCEPTED_EPOCH_FILENAME = "acceptedEpoch";
 
     public static final String UPDATING_EPOCH_FILENAME = "updatingEpoch";

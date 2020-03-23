@@ -150,6 +150,7 @@ public class FastLeaderElection implements Election {
          */
 
         requestBuffer.clear();
+        // 所有字节数据加起来刚好是 40长度
         requestBuffer.putInt(state);
         requestBuffer.putLong(leader);
         requestBuffer.putLong(zxid);
@@ -164,6 +165,7 @@ public class FastLeaderElection implements Election {
      * Messages that a peer wants to send to other peers.
      * These messages can be both Notifications and Acks
      * of reception of notification.
+     * 构建需要投票信息发送给所有节点
      */
     static public class ToSend {
         static enum mType {crequest, challenge, notification, ack}
@@ -186,16 +188,19 @@ public class FastLeaderElection implements Election {
 
         /*
          * Proposed leader in the case of notification
-         * 被投票作为leader节点的myid
+         * 选举目标节点的myid
          */
         long leader;
 
         /*
          * id contains the tag for acks, and zxid for notifications
-         * 被投票作为leader节点的事务ID
+         * 选举目标节点的事务ID
          */
         long zxid;
 
+        /**
+         * 发送方选举的轮次
+         */
         long electionEpoch;
 
         /*
@@ -210,7 +215,9 @@ public class FastLeaderElection implements Election {
          *
          */
         long sid;
-        
+        /**
+         * 选举目标节点的peerEpoch
+         */
         long peerEpoch;
     }
 
@@ -497,8 +504,11 @@ public class FastLeaderElection implements Election {
             }
         }
 
-
+        /**
+         * 从sendqueue取出处理需要发送的数据,只是将数据发送到QuorumCnxnManager中
+         */
         WorkerSender ws;
+
         WorkerReceiver wr;
 
         /**
@@ -540,14 +550,17 @@ public class FastLeaderElection implements Election {
      */
     AtomicLong logicalclock = new AtomicLong(); /* Election instance */
     /**
-     * 该节点把票投给 那个节点的myid
+     * 该节点把票投给 目标节点的myid
      */
     long proposedLeader;
     /**
-     * 该节点把票投给 那个节点的事务ID
+     * 该节点把票投给 目标节点的事务ID
      */
     long proposedZxid;
 
+    /**
+     * 投票目标的轮次
+     */
     long proposedEpoch;
 
 
@@ -645,6 +658,7 @@ public class FastLeaderElection implements Election {
             }
             LOG.info("Sending Notification: 本节点id: {} | proposedLeader(选举的目标leader):{} | proposedZxid:{} | logicalclock(轮次):{} | sid(发送的目标):{} | proposedEpoch:{}",
                     self.getMyid(),proposedLeader,proposedZxid,notmsg.electionEpoch,notmsg.sid,notmsg.peerEpoch);
+            // 放入队列
             sendqueue.offer(notmsg);
         }
     }
@@ -817,6 +831,7 @@ public class FastLeaderElection implements Election {
      * Returns the initial vote value of server identifier.
      *
      * @return long
+     * 获取本节点的myid
      */
     private long getInitId(){
         if(self.getLearnerType() == LearnerType.PARTICIPANT)
@@ -828,6 +843,8 @@ public class FastLeaderElection implements Election {
      * Returns initial last logged zxid.
      *
      * @return long
+     *
+     * 获取最后的事务ID
      */
     private long getInitLastLoggedZxid(){
         if(self.getLearnerType() == LearnerType.PARTICIPANT)
@@ -839,6 +856,8 @@ public class FastLeaderElection implements Election {
      * Returns the initial vote value of the peer epoch.
      *
      * @return long
+     *
+     * 获取当前节点的轮次
      */
     private long getPeerEpoch(){
         if(self.getLearnerType() == LearnerType.PARTICIPANT)
@@ -869,7 +888,7 @@ public class FastLeaderElection implements Election {
             self.jmxLeaderElectionBean = null;
         }
         if (self.start_fle == 0) {
-            //记录选举开始时间
+            //记录本节点选举开始时间(纳秒)
            self.start_fle = Time.currentElapsedTime();
         }
         try {
