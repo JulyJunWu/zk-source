@@ -36,7 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 接受请求/处理转发请求
+ * 接受客户端请求/处理转发请求
  */
 public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(NIOServerCnxnFactory.class);
@@ -144,6 +144,11 @@ public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable 
         return ss.socket().getLocalPort();
     }
 
+    /**
+     * 1.保存客户端连接
+     * 2.记录每个IP对应有多少个客户端连接
+     * @param cnxn
+     */
     private void addCnxn(NIOServerCnxn cnxn) {
         synchronized (cnxns) {
             // 保存客户端连接
@@ -232,7 +237,7 @@ public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable 
                         selected);
                 Collections.shuffle(selectedList);
                 for (SelectionKey k : selectedList) {
-                    // 处理ACCEPT事件
+                    // 处理客户端连接请求,ACCEPT事件
                     if ((k.readyOps() & SelectionKey.OP_ACCEPT) != 0) {
                         SocketChannel sc = ((ServerSocketChannel) k
                                 .channel()).accept();
@@ -246,13 +251,14 @@ public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable 
                         } else {
                             LOG.info("Accepted socket connection from "
                                      + sc.socket().getRemoteSocketAddress());
+                            // 设置为非阻塞
                             sc.configureBlocking(false);
-                            //监听READ操作
+                            //注册到selector中,监听READ操作
                             SelectionKey sk = sc.register(selector,
                                     SelectionKey.OP_READ);
                             // 包装SocketChannel
                             NIOServerCnxn cnxn = createConnection(sc, sk);
-                            // 附加值
+                            // 附加参数
                             sk.attach(cnxn);
                             addCnxn(cnxn);
                         }

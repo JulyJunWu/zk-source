@@ -136,27 +136,37 @@ public class QuorumPeerMain {
   
       LOG.info("Starting quorum peer");
       try {
+          // 创建处理客户端请求的工厂类 , 主要是有2个实现类, 一个是Nio,一个是Netty,默认是使用NioServerCnxnFactory
           ServerCnxnFactory cnxnFactory = ServerCnxnFactory.createFactory();
+          // 配置监听的端口以及单个IP的最大连接上限数量
           cnxnFactory.configure(config.getClientPortAddress(),
                                 config.getMaxClientCnxns());
 
           quorumPeer = getQuorumPeer();
-
+          //设置集群IP
           quorumPeer.setQuorumPeers(config.getServers());
+          // 设置快照和事务日志的管理类
           quorumPeer.setTxnFactory(new FileTxnSnapLog(
                   new File(config.getDataLogDir()),
                   new File(config.getDataDir())));
+          // 设置选举算法,默认是3,也就是FastLeaderElection
           quorumPeer.setElectionType(config.getElectionAlg());
+          // 设置本节点的ID
           quorumPeer.setMyid(config.getServerId());
+          // 超时时间
           quorumPeer.setTickTime(config.getTickTime());
           quorumPeer.setInitLimit(config.getInitLimit());
           quorumPeer.setSyncLimit(config.getSyncLimit());
           quorumPeer.setQuorumListenOnAllIPs(config.getQuorumListenOnAllIPs());
           quorumPeer.setCnxnFactory(cnxnFactory);
+          // 设置验证投票是否过半的类
           quorumPeer.setQuorumVerifier(config.getQuorumVerifier());
           quorumPeer.setClientPortAddress(config.getClientPortAddress());
+          // 设置最小session超时时间
           quorumPeer.setMinSessionTimeout(config.getMinSessionTimeout());
+          // 设置最大session超时时间
           quorumPeer.setMaxSessionTimeout(config.getMaxSessionTimeout());
+          // 设置ZK内存数据库
           quorumPeer.setZKDatabase(new ZKDatabase(quorumPeer.getTxnFactory()));
           quorumPeer.setLearnerType(config.getPeerType());
           quorumPeer.setSyncEnabled(config.getSyncEnabled());
@@ -173,8 +183,9 @@ public class QuorumPeerMain {
 
           quorumPeer.setQuorumCnxnThreadsSize(config.quorumCnxnThreadsSize);
           quorumPeer.initialize();
-
+          // 启动线程(注意::这个类重写了Thread.start)
           quorumPeer.start();
+          // 阻塞,除非程序退出
           quorumPeer.join();
       } catch (InterruptedException e) {
           // warn, but generally this is ok

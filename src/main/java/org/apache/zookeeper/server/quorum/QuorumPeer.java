@@ -314,6 +314,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     }
     /**
      * The servers that make up the cluster
+     * 存放集群的节点
      */
     protected Map<Long, QuorumServer> quorumPeers;
     public int getQuorumSize(){
@@ -630,6 +631,10 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
         else this.quorumConfig = quorumConfig;
     }
 
+    /**
+     * 安全验证,默认是没有的 sasl
+     * @throws SaslException
+     */
     public void initialize() throws SaslException {
         // init quorum auth server & learner
         if (isQuorumSaslAuthEnabled()) {
@@ -651,7 +656,10 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     QuorumStats quorumStats() {
         return quorumStats;
     }
-    
+
+    /**
+     * 把Thread的start重写了
+     */
     @Override
     public synchronized void start() {
         //加载磁盘数据 和读取投票轮次
@@ -666,7 +674,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
 
     /**
      *  1. 加载磁盘数据
-     *  2. 读取配置中的投票轮次
+     *  2. 读取配置中的投票轮次(时代)
      */
     private void loadDataBase() {
         File updating = new File(getTxnFactory().getSnapDir(),
@@ -738,6 +746,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     		re.setStackTrace(e.getStackTrace());
     		throw re;
     	}
+    	// 获取本节点集群通讯的端口
         for (QuorumServer p : getView().values()) {
             if (p.id == myid) {
                 myQuorumAddr = p.addr;
@@ -857,6 +866,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
             qcm = createCnxnManager();
             QuorumCnxManager.Listener listener = qcm.listener;
             if(listener != null){
+                // 启动集群选举监听端口,默认3888
                 listener.start();
                 le = new FastLeaderElection(this, qcm);
             } else {
@@ -934,13 +944,14 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
 
         try {
             /*
-             * Main loop
+             * Main loop  不出意外的话,就会一直在此循环,除非程序异常导致退出
              */
             while (running) {
                 switch (getPeerState()) {
+                // 刚启动都是LOOKING状态
                 case LOOKING:
                     LOG.info("LOOKING");
-
+                    // 只读模式是否启动
                     if (Boolean.getBoolean("readonlymode.enabled")) {
                         LOG.info("Attempting to start ReadOnlyZooKeeperServer");
 

@@ -64,7 +64,9 @@ public class NIOServerCnxn extends ServerCnxn {
     final SocketChannel sock;
 
     protected final SelectionKey sk;
-
+    /**
+     * 是否已经初始化了
+     */
     boolean initialized;
     /**
      * 前4个字段是固定的,表示该请求的大小长度
@@ -112,6 +114,7 @@ public class NIOServerCnxn extends ServerCnxn {
         if (zk != null) { 
             outstandingLimit = zk.getGlobalOutstandingLimit();
         }
+        //设置不启用Nagle算法, 旧年代的产物,如今已经很少使用
         sock.socket().setTcpNoDelay(true);
         /* set socket linger to false, so that socket close does not
          * block */
@@ -206,6 +209,7 @@ public class NIOServerCnxn extends ServerCnxn {
     /** Read the request payload (everything following the length prefix) */
     private void readPayload() throws IOException, InterruptedException {
         if (incomingBuffer.remaining() != 0) { // have we read length bytes?
+            // 读取socketChannel数据到 incomingBuffer 中, 非阻塞
             int rc = sock.read(incomingBuffer); // sock is non-blocking, so ok
             if (rc < 0) {
                 throw new EndOfStreamException(
@@ -225,8 +229,9 @@ public class NIOServerCnxn extends ServerCnxn {
             } else {
                 readRequest();
             }
-            // 重置缓冲区
+            // 重置lenBuffer缓冲区
             lenBuffer.clear();
+            // 重新把lenBuffer赋给incomingBuffer
             incomingBuffer = lenBuffer;
         }
     }
@@ -249,6 +254,13 @@ public class NIOServerCnxn extends ServerCnxn {
 
     /**
      * Handles read/write IO on connection.
+     *
+     *
+     * socketChannel发送的数据包格式是这样的:
+     *
+     *  ---------|-------------|
+     *  | 长度N   | N字节数据    |
+     *  |--------|-------------|
      */
     void doIO(SelectionKey k) throws InterruptedException {
         try {
@@ -267,9 +279,11 @@ public class NIOServerCnxn extends ServerCnxn {
                             + Long.toHexString(sessionId)
                             + ", likely client has closed socket");
                 }
+                // 说明4个字节已经读取完毕
                 if (incomingBuffer.remaining() == 0) {
                     boolean isPayload;
                     if (incomingBuffer == lenBuffer) { // start of next request
+                        // 读写切换
                         incomingBuffer.flip();
                         isPayload = readLength(k);
                         incomingBuffer.clear();
@@ -997,9 +1011,15 @@ public class NIOServerCnxn extends ServerCnxn {
      * @param k selection key
      * @return true if length read, otw false (wasn't really the length)
      * @throws IOException if buffer size exceeds maxBuffer size
+     *
+     * 1.读取数据的长度
+     * 2.对客户端发送的数据长度进行验证 是否在 0 < len < 1048575区间
+     * 3.给incomingBuffer分配len长度的缓冲区,刚好满足客户端发送的数据读取
+     *
      */
     private boolean readLength(SelectionKey k) throws IOException {
         // Read the length, now get the buffer
+        // 获取数据的长度
         int len = lenBuffer.getInt();
         if (!initialized && checkFourLetterWord(sk, len)) {
             return false;
@@ -1008,10 +1028,11 @@ public class NIOServerCnxn extends ServerCnxn {
         if (len < 0 || len > BinaryInputArchive.maxBuffer) {
             throw new IOException("Len error " + len);
         }
+        // 验证zk服务是否启动,在选举时禁止对外提供服务
         if (!isZKServerRunning()) {
             throw new IOException("ZooKeeperServer not running");
         }
-        // 分配接收数据长度的缓冲
+        // 分配接收数据长度的缓冲(堆内缓冲)
         incomingBuffer = ByteBuffer.allocate(len);
         return true;
     }
