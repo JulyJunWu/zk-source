@@ -737,7 +737,7 @@ public class QuorumCnxManager {
     /**
      * Thread to listen on some port
      *
-     * 监听 3888选举端口连接
+     * 监听 3888端口连接
      */
     public class Listener extends ZooKeeperThread {
 
