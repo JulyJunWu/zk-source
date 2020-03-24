@@ -314,6 +314,7 @@ public class FastLeaderElection implements Election {
                                 continue;
                             }
                             boolean backCompatibility = (response.buffer.capacity() == 28);
+                            // 偏移量等设置为初始状态,注意:::数据并没有清除
                             response.buffer.clear();
 
                             // Instantiate Notification and set its attributes
@@ -371,7 +372,7 @@ public class FastLeaderElection implements Election {
                             /*
                              * If this server is looking, then send proposed leader
                              */
-
+                            // 如果本节点处于 LOOKING状态
                             if(self.getPeerState() == ServerState.LOOKING){
                                 //放入本类中的接收队列
                                 recvqueue.offer(n);

@@ -56,7 +56,7 @@ public class QuorumPeerConfig {
     protected InetSocketAddress clientPortAddress;
     // zk数据存放目录
     protected String dataDir;
-    // zk日志存放目录
+    // zk事务日志存放目录
     protected String dataLogDir;
     protected int tickTime = ZooKeeperServer.DEFAULT_TICK_TIME;
     /**

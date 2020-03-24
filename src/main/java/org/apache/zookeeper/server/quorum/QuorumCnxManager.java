@@ -461,6 +461,7 @@ public class QuorumCnxManager {
         Long sid = null;
         try {
             // Read server id
+            // 首次连接都是发送sid,所以接收一开始直接读取sid
             sid = din.readLong();
             if (sid < 0) { // this is not a server id but a protocol version (see ZOOKEEPER-1633)
                 sid = din.readLong();
@@ -497,6 +498,7 @@ public class QuorumCnxManager {
 
         // do authenticating learner
         LOG.debug("Authenticating learner server.id: {}", sid);
+        // 安全验证,默认无
         authServer.authenticate(sock, din);
 
         //If wins the challenge, then close the new connection.
@@ -526,21 +528,21 @@ public class QuorumCnxManager {
 
             // Otherwise start worker threads to receive data.
         } else {
+            // 说明sid 大于本节点的myid
             SendWorker sw = new SendWorker(sock, sid);
             RecvWorker rw = new RecvWorker(sock, din, sid, sw);
             sw.setRecv(rw);
 
             SendWorker vsw = senderWorkerMap.get(sid);
-
+            // 如果之前存在连接以及相关线程,停止
             if (vsw != null)
                 vsw.finish();
 
             senderWorkerMap.put(sid, sw);
             queueSendMap.putIfAbsent(sid, new ArrayBlockingQueue<ByteBuffer>(SEND_CAPACITY));
-
+            // 启动对该Socket的读取和写线程
             sw.start();
             rw.start();
-
             return;
         }
     }
@@ -709,8 +711,8 @@ public class QuorumCnxManager {
      * Helper method to set socket options.
      *
      * @param sock Reference to socket
-     *
-     *  设置Socket一些属性
+     *             <p>
+     *             设置Socket一些属性
      */
     private void setSockOpts(Socket sock) throws SocketException {
         // 禁止启用Nagle算法
@@ -757,7 +759,7 @@ public class QuorumCnxManager {
 
     /**
      * Thread to listen on some port
-     *
+     * <p>
      * 监听 3888选举端口连接
      */
     public class Listener extends ZooKeeperThread {
@@ -861,6 +863,8 @@ public class QuorumCnxManager {
      * Thread to send messages. Instance waits on a queue, and send a message as
      * soon as there is one available. If connection breaks, then opens a new
      * one.
+     *
+     * 从 queueSendMap不断拉取属于自身sid对应的数据进行发送
      */
     class SendWorker extends ZooKeeperThread {
         /**
@@ -943,6 +947,7 @@ public class QuorumCnxManager {
             senderWorkerMap.remove(sid, this);
             //线程数量--
             threadCnt.decrementAndGet();
+            LOG.info("接收选举通讯线程注销, sid={}",sid);
             return running;
         }
 
@@ -953,7 +958,7 @@ public class QuorumCnxManager {
             byte[] msgBytes = new byte[b.capacity()];
             try {
                 //这个操作有点不明白了,验证是否溢出??? 为什么不直接验证remain和长度或者capacity????
-                // TODO::::  疑问!!! 感觉代码时多余的!!!
+                // TODO::::  疑问!!! 感觉代码时多余的!!! 可否使用b.remaining() == b.capacity()
                 b.position(0);
                 b.get(msgBytes);
             } catch (BufferUnderflowException be) {
@@ -1039,6 +1044,8 @@ public class QuorumCnxManager {
     /**
      * Thread to receive messages. Instance waits on a socket read. If the
      * channel breaks, then removes itself from the pool of receivers.
+     *
+     * 负责节点的选举信息接收 以及处理转发到msgBytes队列
      */
     class RecvWorker extends ZooKeeperThread {
         /**
@@ -1100,7 +1107,7 @@ public class QuorumCnxManager {
                      * Reads the first int to determine the length of the
                      * message
                      *
-                     * 先读取4个字节,代表着消息的长度
+                     * 先读取4个字节,代表着消息的长度 , 无消息则阻塞
                      */
                     int length = din.readInt();
                     if (length <= 0 || length > PACKETMAXSIZE) {
@@ -1205,6 +1212,8 @@ public class QuorumCnxManager {
      * queue itself.
      *
      * @param msg Reference to the message to be inserted in the queue
+     *
+     *  将数据添加到recvQueue队列中 , recvQueue队列数据等待FastLeaderElection.WorkerReceiver线程消费
      */
     public void addToRecvQueue(Message msg) {
         synchronized (recvQLock) {
@@ -1240,6 +1249,7 @@ public class QuorumCnxManager {
 
     /**
      * 是否存在 该节点的对应处理socket数据的线程
+     *
      * @param peerSid
      * @return
      */
