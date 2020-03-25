@@ -262,7 +262,7 @@ public class QuorumPeerConfig {
             } else if (key.startsWith("group")) {
                 int dot = key.indexOf('.');
                 long gid = Long.parseLong(key.substring(dot + 1));
-
+                // 格式 group.12132=1:2:3
                 numGroups++;
 
                 String parts[] = value.split(":");
@@ -275,6 +275,7 @@ public class QuorumPeerConfig {
                 }
 
             } else if(key.startsWith("weight")) {
+                // 配置了权重, 如weight.sid = 8
                 int dot = key.indexOf('.');
                 long sid = Long.parseLong(key.substring(dot + 1));
                 serverWeight.put(sid, Long.parseLong(value));
