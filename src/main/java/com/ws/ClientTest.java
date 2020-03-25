@@ -1,7 +1,6 @@
 package com.ws;
 
 import org.apache.zookeeper.*;
-import org.apache.zookeeper.common.Time;
 import org.apache.zookeeper.data.Stat;
 
 import java.util.concurrent.locks.LockSupport;
@@ -17,7 +16,7 @@ public class ClientTest {
 
     static {
         try {
-            zooKeeper = new ZooKeeper("127.0.0.1:2181", 20000, new Watcher() {
+            zooKeeper = new ZooKeeper("127.0.0.1:2182", 20000, new Watcher() {
                 public void process(WatchedEvent event) {
 
                 }

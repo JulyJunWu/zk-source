@@ -123,6 +123,7 @@ public class FileTxnLog implements TxnLog {
      */
     private final boolean forceSync = !System.getProperty("zookeeper.forceSync", "yes").equals("no");;
     long dbId;
+    // 这个list目前只会存在一个,有何意义, 唯一的添加的地方也是加锁验空了.....emmmmm
     private LinkedList<FileOutputStream> streamsToFlush =
         new LinkedList<FileOutputStream>();
     File logFileWrite = null;
@@ -217,9 +218,11 @@ public class FileTxnLog implements TxnLog {
            }
 
            logFileWrite = new File(logDir, Util.makeLogName(hdr.getZxid()));
+           // 一堆装饰...
            fos = new FileOutputStream(logFileWrite);
            logStream=new BufferedOutputStream(fos);
            oa = BinaryOutputArchive.getArchive(logStream);
+           // 文件头
            FileHeader fhdr = new FileHeader(TXNLOG_MAGIC,VERSION, dbId);
            fhdr.serialize(oa, "fileheader");
            // Make sure that the magic number is written before padding.

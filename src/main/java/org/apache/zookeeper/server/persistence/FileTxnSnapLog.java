@@ -88,6 +88,7 @@ public class FileTxnSnapLog {
         this.dataDir = new File(dataDir, version + VERSION);
         this.snapDir = new File(snapDir, version + VERSION);
         if (!this.dataDir.exists()) {
+            //不存在则创建事务日志存放路径
             if (!this.dataDir.mkdirs()) {
                 throw new IOException("Unable to create data directory "
                         + this.dataDir);
@@ -98,6 +99,7 @@ public class FileTxnSnapLog {
         }
 
         if (!this.snapDir.exists()) {
+            //不存在则创建快照存放路径
             if (!this.snapDir.mkdirs()) {
                 throw new IOException("Unable to create snap directory "
                         + this.snapDir);
