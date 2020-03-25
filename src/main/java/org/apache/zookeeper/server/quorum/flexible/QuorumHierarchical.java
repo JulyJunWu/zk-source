@@ -62,6 +62,8 @@ import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
  *  weight.9=1
  * 
  * Note that it is still necessary to define peers using the server keyword.
+ *
+ * 这个主要面向 组 以及 面向权重的 投票类 , 默认是不使用的
  */
 
 public class QuorumHierarchical implements QuorumVerifier {
@@ -233,6 +235,7 @@ public class QuorumHierarchical implements QuorumVerifier {
      * Verifies if a given set is a quorum.
      */
     public boolean containsQuorum(Set<Long> set){
+        // 存放每组对应的权重数量 gid -> weight
         HashMap<Long, Long> expansion = new HashMap<Long, Long>();
         
         /*
@@ -244,8 +247,10 @@ public class QuorumHierarchical implements QuorumVerifier {
         for(long sid : set){
             Long gid = serverGroup.get(sid);
             if(!expansion.containsKey(gid))
+                // 不存在该组,直接添加权重
                 expansion.put(gid, serverWeight.get(sid));
             else {
+                // 存在该组,则权重累加
                 long totalWeight = serverWeight.get(sid) + expansion.get(gid);
                 expansion.put(gid, totalWeight);
             }
@@ -258,11 +263,14 @@ public class QuorumHierarchical implements QuorumVerifier {
         for(Entry<Long, Long> entry : expansion.entrySet()) {
             Long gid = entry.getKey();
             LOG.debug("Group info: " + entry.getValue() + ", " + gid + ", " + groupWeight.get(gid));
+            // 验证传进来的节点数的weight 是否超过该组的权重的一半以上
             if(entry.getValue() > (groupWeight.get(gid) / 2) )
+                //说明该组的投票数过半
                 majGroupCounter++;
         }
         
-        LOG.debug("Majority group counter: " + majGroupCounter + ", " + numGroups); 
+        LOG.debug("Majority group counter: " + majGroupCounter + ", " + numGroups);
+        // 投票过半的组数是否 大于所有组的一半以上
         if((majGroupCounter > (numGroups / 2))){
             LOG.debug("Positive set size: " + set.size());
             return true;

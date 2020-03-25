@@ -49,7 +49,9 @@ public class QuorumMaj implements QuorumVerifier {
     /**
      * Returns weight of 1 by default.
      * 
-     * @param id 
+     * @param id
+     *
+     * 可以进行配置每个节点的权重
      */
     public long getWeight(long id){
         return (long) 1;

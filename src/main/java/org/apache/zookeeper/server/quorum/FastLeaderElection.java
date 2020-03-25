@@ -547,7 +547,7 @@ public class FastLeaderElection implements Election {
     QuorumPeer self;
     Messenger messenger;
     /**
-     * 代表选举第几轮
+     * 代表选举第几轮(逻辑时钟)
      */
     AtomicLong logicalclock = new AtomicLong(); /* Election instance */
     /**
@@ -684,6 +684,7 @@ public class FastLeaderElection implements Election {
     protected boolean totalOrderPredicate(long newId, long newZxid, long newEpoch, long curId, long curZxid, long curEpoch) {
         LOG.info("id: " + newId + ", proposed id: " + curId + ", zxid: 0x" +
                 Long.toHexString(newZxid) + ", proposed zxid: 0x" + Long.toHexString(curZxid));
+        //这边涉及了权重
         if(self.getQuorumVerifier().getWeight(newId) == 0){
             return false;
         }
@@ -920,6 +921,8 @@ public class FastLeaderElection implements Election {
                 /*
                  * Remove next notification from queue, times out after 2 times
                  * the termination time
+                 *
+                 * 从recvqueue队列中取出投票相关数据
                  */
                 Notification n = recvqueue.poll(notTimeout,
                         TimeUnit.MILLISECONDS);
@@ -927,6 +930,9 @@ public class FastLeaderElection implements Election {
                 /*
                  * Sends more notifications if haven't received enough.
                  * Otherwise processes new notification.
+                 * 这边主要预防没数据或者链接未成功:
+                 *  1.如果带发送投票数据集合中size == 0 那么重新发送本节点投票数据
+                 *  2.若1不成立,则尝试重新建立连接
                  */
                 if(n == null){
                     if(manager.haveDelivered()){
@@ -936,7 +942,6 @@ public class FastLeaderElection implements Election {
                         //建立连接
                         manager.connectAll();
                     }
-
                     /*
                      * Exponential backoff
                      * 没有数据时,阻塞翻倍,最大为60s
@@ -946,7 +951,7 @@ public class FastLeaderElection implements Election {
                             tmpTimeOut : maxNotificationInterval);
                     LOG.info("Notification time out: " + notTimeout);
                 }
-                //本节点是否包含对象的sid和推荐的leader的sid(注:sid就是myid)
+                //本节点配置中是否包含发送投票节点的sid和推荐的leader的sid(注:sid就是myid)
                 else if(validVoter(n.sid) && validVoter(n.leader)) {
                     /*
                      * Only proceed if the vote comes from a replica in the
@@ -961,7 +966,7 @@ public class FastLeaderElection implements Election {
                             logicalclock.set(n.electionEpoch);
                             //清空投票
                             recvset.clear();
-                            //开始比较投票信息,选出更为合理的投票
+                            //开始比较投票信息,选出更为合理的投票(双方进行PK)
                             if(totalOrderPredicate(n.leader, n.zxid, n.peerEpoch,
                                     getInitId(), getInitLastLoggedZxid(), getPeerEpoch())) {
                                 //对方胜出,本节点更新为对方选举的leader信息
@@ -1093,6 +1098,7 @@ public class FastLeaderElection implements Election {
                         break;
                     }
                 } else {
+                    LOG.info("该节点信息不存在配置中 | sid -> {}",n.sid);
                     if (!validVoter(n.leader)) {
                         LOG.warn("Ignoring notification for non-cluster member sid {} from sid {}", n.leader, n.sid);
                     }
