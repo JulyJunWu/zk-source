@@ -73,6 +73,8 @@ public class SyncRequestProcessor extends ZooKeeperCriticalThread implements Req
     private final Random r = new Random(System.nanoTime());
     /**
      * The number of log entries to log before starting a snapshot
+     *  这就是写入的日志达到一定的数量后会进行一个快照的备份
+     *  默认是 写入日志数量 > snapCount / 2 + 随机值
      */
     private static int snapCount = ZooKeeperServer.getSnapCount();
     
@@ -147,10 +149,12 @@ public class SyncRequestProcessor extends ZooKeeperCriticalThread implements Req
                 }
                 if (si != null) {
                     // track the number of records written to the log
-                    // 预写日志,先将请求写入日志
+                    // 预写日志,先将请求写入缓冲区
                     if (zks.getZKDatabase().append(si)) {
                         logCount++;
+                        // 当写入的事务日志达到一定的数量后会进行一个快照的备份
                         if (logCount > (snapCount / 2 + randRoll)) {
+                            //随机得到一个randRoll值,这时为了避免所有节点同一时间进行生成快照和滚动日志
                             setRandRoll(r.nextInt(snapCount/2));
                             // roll the log
                             zks.getZKDatabase().rollLog();
@@ -190,7 +194,7 @@ public class SyncRequestProcessor extends ZooKeeperCriticalThread implements Req
                     }
                     toFlush.add(si);
                     if (toFlush.size() > 1000) {
-                        //将数据持久化到磁盘
+                        //将事务日志持久化到磁盘
                         flush(toFlush);
                     }
                 }
@@ -207,7 +211,7 @@ public class SyncRequestProcessor extends ZooKeeperCriticalThread implements Req
     {
         if (toFlush.isEmpty())
             return;
-
+        // 提交事务日志,将缓冲区的事务日志刷到磁盘
         zks.getZKDatabase().commit();
         while (!toFlush.isEmpty()) {
             Request i = toFlush.remove();

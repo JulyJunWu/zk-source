@@ -220,7 +220,7 @@ public class DataTree {
     public DataTree() {
         /* Rather than fight it, let root have an alias */
 
-        //"" 和 "/" 都是根节点
+        //"" 和 "/" 都是根节点 , 顶级""节点再序列化需要使用,因为是从""开始不断往子节点进行递归序列化的
         nodes.put("", root);
         nodes.put(rootZookeeper, root);
 
@@ -1051,6 +1051,10 @@ public class DataTree {
      *            a string builder.
      * @throws IOException
      * @throws InterruptedException
+     *
+     *  从顶级节点 ""开始递归
+     * 1.不断递归对节点(DataNode)的 数据进行序列化,直到数据全部序列化完毕
+     *
      */
     void serializeNode(OutputArchive oa, StringBuilder path) throws IOException {
         String pathString = path.toString();
@@ -1073,13 +1077,17 @@ public class DataTree {
         oa.writeString(pathString, "path");
         oa.writeRecord(nodeCopy, "node");
         path.append('/');
+        // 记录开始位置,为了将path进行复用
         int off = path.length();
         for (String child : children) {
             // since this is single buffer being resused
             // we need
             // to truncate the previous bytes of string.
+            //删除上次追加的路径
             path.delete(off, Integer.MAX_VALUE);
+            //取得当前子节点的全路径
             path.append(child);
+            // 递归执行,直到没有该路径节点径为止
             serializeNode(oa, path);
         }
     }

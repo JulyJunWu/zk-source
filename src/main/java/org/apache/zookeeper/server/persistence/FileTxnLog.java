@@ -121,7 +121,7 @@ public class FileTxnLog implements TxnLog {
     /**
      * 日志提交的时候是否需要立即刷到磁盘,默认为yes
      */
-    private final boolean forceSync = !System.getProperty("zookeeper.forceSync", "yes").equals("no");;
+    private final boolean forceSync = !System.getProperty("zookeeper.forceSync", "yes").equals("no");
     long dbId;
     // 这个list目前只会存在一个,有何意义, 唯一的添加的地方也是加锁验空了.....emmmmm
     private LinkedList<FileOutputStream> streamsToFlush =
@@ -216,7 +216,7 @@ public class FileTxnLog implements TxnLog {
            if(LOG.isInfoEnabled()){
                 LOG.info("Creating new log file: " + Util.makeLogName(hdr.getZxid()));
            }
-
+           // 这边的意义就是在于 创建事务日志文件以及追加文件头
            logFileWrite = new File(logDir, Util.makeLogName(hdr.getZxid()));
            // 一堆装饰...
            fos = new FileOutputStream(logFileWrite);
@@ -225,8 +225,8 @@ public class FileTxnLog implements TxnLog {
            // 文件头
            FileHeader fhdr = new FileHeader(TXNLOG_MAGIC,VERSION, dbId);
            fhdr.serialize(oa, "fileheader");
-           // Make sure that the magic number is written before padding.
-           logStream.flush();
+            // Make sure that the magic number is written before padding.
+            logStream.flush();
            filePadding.setCurrentSize(fos.getChannel().position());
            streamsToFlush.add(fos);
         }

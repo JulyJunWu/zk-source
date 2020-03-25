@@ -388,6 +388,7 @@ public class FileTxnSnapLog {
 
     /**
      * commit the transaction of logs
+     * 提交事务日志,刷到磁盘
      * @throws IOException
      */
     public void commit() throws IOException {
