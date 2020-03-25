@@ -70,7 +70,7 @@ public class QuorumHierarchical implements QuorumVerifier {
     HashMap<Long, Long> serverWeight;
     HashMap<Long, Long> serverGroup;
     HashMap<Long, Long> groupWeight;
-    
+    // 所有group的数量
     int numGroups;
    
     /**

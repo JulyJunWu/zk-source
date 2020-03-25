@@ -29,6 +29,8 @@ import org.slf4j.LoggerFactory;
  * This class implements a validator for majority quorums. The 
  * implementation is straightforward.
  *
+ * 默认的投票验证过半类
+ *
  */
 public class QuorumMaj implements QuorumVerifier {
     private static final Logger LOG = LoggerFactory.getLogger(QuorumMaj.class);

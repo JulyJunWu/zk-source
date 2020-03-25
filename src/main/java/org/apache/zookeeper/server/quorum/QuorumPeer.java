@@ -100,6 +100,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
      * 负责选举时的收发消息管理 , 监听等等
      */
     QuorumCnxManager qcm;
+    // 安全验证服务,默认不开启
     QuorumAuthServer authServer;
     QuorumAuthLearner authLearner;
     // VisibleForTesting. This flag is used to know whether qLearner's and
@@ -112,6 +113,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
      * instantiated later. Also, it is created once on 
      * bootup and only thrown away in case of a truncate
      * message from the leader
+     * 存放节点数据的地方
      */
     private ZKDatabase zkDb;
 

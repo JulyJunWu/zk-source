@@ -415,7 +415,7 @@ public class QuorumPeerConfig {
                 /*
                  * The default QuorumVerifier is QuorumMaj
                  */
-
+                // 默认使用的过半机制
                 LOG.info("Defaulting to majority quorums");
                 quorumVerifier = new QuorumMaj(servers.size());
             }
