@@ -81,6 +81,7 @@ public class Util {
      * 
      * @param zxid used as a file name suffix (extention)
      * @return file name
+     *  根据事务转成16进制得到文件名称
      */
     public static String makeLogName(long zxid) {
         return FileTxnLog.LOG_FILE_PREFIX + "." + Long.toHexString(zxid);

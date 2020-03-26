@@ -195,7 +195,10 @@ public class FileTxnLog implements TxnLog {
      * append an entry to the transaction log
      * @param hdr the header of the transaction
      * @param txn the transaction part of the entry
-     * returns true iff something appended, otw false 
+     * returns true iff something appended, otw false
+     * 职责:
+     *    1. 如果文件输出流不存在,则创建新的事务日志文件及对应的文件输出流
+     *    2.将需要追加的数据序列化到缓冲区
      */
     public synchronized boolean append(TxnHeader hdr, Record txn)
         throws IOException
@@ -226,6 +229,7 @@ public class FileTxnLog implements TxnLog {
            FileHeader fhdr = new FileHeader(TXNLOG_MAGIC,VERSION, dbId);
            fhdr.serialize(oa, "fileheader");
             // Make sure that the magic number is written before padding.
+            //将文件头刷出到磁盘文件
             logStream.flush();
            filePadding.setCurrentSize(fos.getChannel().position());
            streamsToFlush.add(fos);
@@ -324,7 +328,8 @@ public class FileTxnLog implements TxnLog {
      * commit the logs. make sure that evertyhing hits the
      * disk
      *
-     *  持久化到磁盘
+     *  1.将当前的事务日志文件输出流的缓冲区数据输入磁盘
+     *  2.关闭旧事务日志输出流对象
      */
     public synchronized void commit() throws IOException {
         if (logStream != null) {
@@ -351,7 +356,9 @@ public class FileTxnLog implements TxnLog {
                 }
             }
         }
+        // 关闭旧事务日志文件的输出流, 最后只会保存当前最新文件日志输出流
         while (streamsToFlush.size() > 1) {
+            // close会自动关闭文件管道(FileChannel)
             streamsToFlush.removeFirst().close();
         }
     }

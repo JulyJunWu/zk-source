@@ -21,6 +21,7 @@ public class OtherTest {
 
 
     public static void main(String[] args) throws Exception {
+        // testFileChannel();
         testZkDatabase();
     }
 
@@ -37,26 +38,19 @@ public class OtherTest {
         TxnHeader txnHeader = new TxnHeader(666, 888, 999L, 555L, 7);
         Request request = new Request(1L, 1, 1, txnHeader, null, 1L);
         txnSnapLog.append(request);
+
+        txnHeader.setZxid(1234L);
+        txnSnapLog.rollLog();
+        txnSnapLog.append(request);
         txnSnapLog.commit();
     }
 
     public static void testFileChannel() throws Exception {
-
-        FileOutputStream bigbaby = new FileOutputStream("bigbaby");
-
-        bigbaby.write(8);
-        bigbaby.flush();
-
-        FileChannel channel = bigbaby.getChannel();
-
-        ByteBuffer allocate = ByteBuffer.allocate(4);
-        allocate.putInt(6);
-        channel.write(allocate);
-        allocate.flip();
-        channel.close();
-        bigbaby.flush();
-
-        LockSupport.park();
-
+        FileOutputStream fos = new FileOutputStream("ws");
+        FileChannel channel = fos.getChannel();
+        ByteBuffer wrap = ByteBuffer.wrap("HelloWorld".getBytes());
+        channel.write(wrap,102400L);
+        fos.flush();
+        fos.close();
     }
 }

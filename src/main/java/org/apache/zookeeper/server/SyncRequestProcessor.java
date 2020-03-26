@@ -81,6 +81,7 @@ public class SyncRequestProcessor extends ZooKeeperCriticalThread implements Req
     /**
      * The number of log entries before rolling the log, number
      * is chosen randomly
+     * 一个随机值
      */
     private static int randRoll;
 
@@ -157,6 +158,7 @@ public class SyncRequestProcessor extends ZooKeeperCriticalThread implements Req
                             //随机得到一个randRoll值,这时为了避免所有节点同一时间进行生成快照和滚动日志
                             setRandRoll(r.nextInt(snapCount/2));
                             // roll the log
+                            // 将旧输出流置空,等待创建新输出流(意味着新需要创建新的事务日志文件)
                             zks.getZKDatabase().rollLog();
                             // take a snapshot
                             if (snapInProcess != null && snapInProcess.isAlive()) {
