@@ -17,14 +17,17 @@
  */
 
 package org.apache.zookeeper.server.persistence;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+
+import org.apache.jute.BinaryInputArchive;
+import org.apache.jute.BinaryOutputArchive;
+import org.apache.jute.InputArchive;
+import org.apache.jute.OutputArchive;
+import org.apache.zookeeper.server.DataTree;
+import org.apache.zookeeper.server.util.SerializeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,15 +35,6 @@ import java.util.Map;
 import java.util.zip.Adler32;
 import java.util.zip.CheckedInputStream;
 import java.util.zip.CheckedOutputStream;
-
-import org.apache.jute.BinaryInputArchive;
-import org.apache.jute.BinaryOutputArchive;
-import org.apache.jute.InputArchive;
-import org.apache.jute.OutputArchive;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.apache.zookeeper.server.DataTree;
-import org.apache.zookeeper.server.util.SerializeUtils;
 
 /**
  * This class implements the snapshot interface.
@@ -66,7 +60,7 @@ public class FileSnap implements SnapShot {
     /**
      * deserialize a data tree from the most recent snapshot
      * @return the zxid of the snapshot
-     */ 
+     */
     public long deserialize(DataTree dt, Map<Long, Integer> sessions)
             throws IOException {
         // we run through 100 snapshots (not all of them)
@@ -98,11 +92,11 @@ public class FileSnap implements SnapShot {
             } catch(IOException e) {
                 LOG.warn("problem reading snap file " + snap, e);
             } finally {
-                if (snapIS != null) 
+                if (snapIS != null)
                     snapIS.close();
-                if (crcIn != null) 
+                if (crcIn != null)
                     crcIn.close();
-            } 
+            }
         }
         if (!foundValid) {
             throw new IOException("Not able to find valid snapshots in " + snapDir);
@@ -124,7 +118,7 @@ public class FileSnap implements SnapShot {
         header.deserialize(ia, "fileheader");
         if (header.getMagic() != SNAP_MAGIC) {
             throw new IOException("mismatching magic headers "
-                    + header.getMagic() + 
+                    + header.getMagic() +
                     " !=  " + FileSnap.SNAP_MAGIC);
         }
         SerializeUtils.deserializeSnapshot(dt,ia,sessions);
@@ -141,7 +135,7 @@ public class FileSnap implements SnapShot {
         }
         return files.get(0);
     }
-    
+
     /**
      * find the last (maybe) valid n snapshots. this does some 
      * minor checks on the validity of the snapshots. It just
@@ -183,8 +177,13 @@ public class FileSnap implements SnapShot {
      * @param the number of most recent snapshots
      * @return the last n snapshots
      * @throws IOException
+     *
+     * 指定需要的文件数量 , 从列表中匹配, 直到满足给定数量,返回
+     *
+     * 就是返回最新的n个快照文件对象
      */
     public List<File> findNRecentSnapshots(int n) throws IOException {
+        // 获取当前目录下的所有文件并排序
         List<File> files = Util.sortDataDir(snapDir.listFiles(), SNAPSHOT_FILE_PREFIX, false);
         int count = 0;
         List<File> list = new ArrayList<File>();

@@ -134,12 +134,19 @@ public class Util {
      * @param name the file name to parse
      * @param prefix the file name prefix (snapshot or log)
      * @return zxid
+     *
+     * 1 .给定名称 和 匹配的前缀 进行匹配
+     * 2. 匹配成功则转换对应的10进制数字事务ID
+     *
+     * 返回对应的事务ID
      */
     public static long getZxidFromName(String name, String prefix) {
         long zxid = -1;
         String nameParts[] = name.split("\\.");
+        // 是都符合匹配要求
         if (nameParts.length == 2 && nameParts[0].equals(prefix)) {
             try {
+                // 进行将16进制字符串转成对应的10进制 zxid
                 zxid = Long.parseLong(nameParts[1], 16);
             } catch (NumberFormatException e) {
             }
@@ -290,6 +297,8 @@ public class Util {
      * @param ascending true sorted in ascending order, false results in
      * descending order
      * @return sorted input files
+     *
+     * 给定文件列表以及 排序规则对 列表进行排序
      */
     public static List<File> sortDataDir(File[] files, String prefix, boolean ascending)
     {

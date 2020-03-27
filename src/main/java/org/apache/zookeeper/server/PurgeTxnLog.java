@@ -87,6 +87,7 @@ public class PurgeTxnLog {
 
     // VisibleForTesting
     static void purgeOlderSnapshots(FileTxnSnapLog txnLog, File snapShot) {
+        // 获取事务ID
         final long leastZxidToBeRetain = Util.getZxidFromName(
                 snapShot.getName(), PREFIX_SNAPSHOT);
 
@@ -155,6 +156,7 @@ public class PurgeTxnLog {
                 "\t"+f.getPath();
             LOG.info(msg);
             System.out.println(msg);
+            // 删除快照!!!
             if(!f.delete()){
                 System.err.println("Failed to remove "+f.getPath());
             }

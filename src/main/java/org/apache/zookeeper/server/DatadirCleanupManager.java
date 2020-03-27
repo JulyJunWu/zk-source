@@ -59,7 +59,7 @@ public class DatadirCleanupManager {
      */
     private final String dataLogDir;
     /**
-     * 保留的数量??? 默认是3
+     * 保留的数量,默认是3
      */
     private final int snapRetainCount;
     /**

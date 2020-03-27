@@ -169,6 +169,10 @@ public class FileTxnLog implements TxnLog {
     /**
      * rollover the current log file to a new one.
      * @throws IOException
+     *
+     *  1.事务日志从缓存区刷到磁盘
+     *
+     *  2.创建新的事务日志文件及输出流接收新的事务日志
      */
     public synchronized void rollLog() throws IOException {
         if (logStream != null) {
@@ -255,14 +259,18 @@ public class FileTxnLog implements TxnLog {
      * @param logDirList array of files
      * @param snapshotZxid return files at, or before this zxid
      * @return
+     *
+     * 获取快照文件
      */
     public static File[] getLogFiles(File[] logDirList,long snapshotZxid) {
         List<File> files = Util.sortDataDir(logDirList, LOG_FILE_PREFIX, true);
         long logZxid = 0;
         // Find the log file that starts before or at the same time as the
         // zxid of the snapshot
+        // 从文件中找到小于snapshotZxid的最大logZxid
         for (File f : files) {
             long fzxid = Util.getZxidFromName(f.getName(), LOG_FILE_PREFIX);
+            // 事务ID > snapshotZxid 略过
             if (fzxid > snapshotZxid) {
                 continue;
             }
@@ -272,6 +280,7 @@ public class FileTxnLog implements TxnLog {
                 logZxid = fzxid;
             }
         }
+        // 存放大等于logZxid的快照文件
         List<File> v=new ArrayList<File>(5);
         for (File f : files) {
             long fzxid = Util.getZxidFromName(f.getName(), LOG_FILE_PREFIX);

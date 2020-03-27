@@ -196,7 +196,7 @@ public class SyncRequestProcessor extends ZooKeeperCriticalThread implements Req
                     }
                     toFlush.add(si);
                     if (toFlush.size() > 1000) {
-                        //将事务日志持久化到磁盘
+                        //将事务日志从缓冲区持久化到磁盘
                         flush(toFlush);
                     }
                 }
