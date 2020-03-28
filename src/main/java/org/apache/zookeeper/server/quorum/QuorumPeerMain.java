@@ -78,6 +78,8 @@ public class QuorumPeerMain {
      *  zk Server
      *
      *   在启动配置中添加参数 , 指定zoo.cfg的路径
+     *
+     *   启动入口 , 集群或者单机都可以
      */
     public static void main(String[] args) {
         QuorumPeerMain main = new QuorumPeerMain();
