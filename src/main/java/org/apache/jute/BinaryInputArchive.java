@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- *
+ * 反序列化
  */
 public class BinaryInputArchive implements InputArchive {
     static public final String UNREASONBLE_LENGTH= "Unreasonable length = ";

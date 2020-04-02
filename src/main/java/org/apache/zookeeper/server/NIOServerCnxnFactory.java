@@ -65,6 +65,9 @@ public class NIOServerCnxnFactory extends ServerCnxnFactory implements Runnable 
     */
     final ByteBuffer directBuffer = ByteBuffer.allocateDirect(64 * 1024);
 
+    /**
+     * 存放IP -> 连接
+     */
     final HashMap<InetAddress, Set<NIOServerCnxn>> ipMap =
         new HashMap<InetAddress, Set<NIOServerCnxn>>( );
 

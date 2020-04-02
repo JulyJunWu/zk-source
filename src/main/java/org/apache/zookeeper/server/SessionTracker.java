@@ -42,6 +42,11 @@ public interface SessionTracker {
         long getServerId();
     }
 
+    /**
+     * 获取一个sessionId
+     * @param sessionTimeout
+     * @return
+     */
     long createSession(int sessionTimeout);
 
     void addSession(long id, int to);

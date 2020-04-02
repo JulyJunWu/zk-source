@@ -622,6 +622,9 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         jmxDataTreeBean = null;
     }
 
+    /**
+     * 请求处理数量+1
+     */
     public void incInProcess() {
         requestsInProcess.incrementAndGet();
     }
@@ -690,6 +693,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         r.nextBytes(passwd);
         ByteBuffer to = ByteBuffer.allocate(4);
         to.putInt(timeout);
+        // 关联sessionId , 并保存到NioServerCnxFactory
         cnxn.setSessionId(sessionId);
         submitRequest(cnxn, sessionId, OpCode.createSession, 0, to, null);
         return sessionId;
@@ -791,6 +795,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
      */
     private void submitRequest(ServerCnxn cnxn, long sessionId, int type,
             int xid, ByteBuffer bb, List<Id> authInfo) {
+        // 包装成请求
         Request si = new Request(cnxn, sessionId, xid, type, bb, authInfo);
         submitRequest(si);
     }
@@ -815,6 +820,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
             }
         }
         try {
+            // 对超时时间进行重设
             touch(si.cnxn);
             //验证请求类型是否合理
             boolean validpacket = Request.isValid(si.type);
@@ -983,6 +989,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
             LOG.info(msg);
             throw new CloseRequestException(msg);
         }
+        // 客户端请求的最后事务ID 如果大于 服务器已处理的最大事务ID
         if (connReq.getLastZxidSeen() > zkDb.dataTree.lastProcessedZxid) {
             String msg = "Refusing session request for client "
                 + cnxn.getRemoteSocketAddress()
@@ -1008,14 +1015,18 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         cnxn.setSessionTimeout(sessionTimeout);
         // We don't want to receive any packets until we are sure that the
         // session is setup
+        // 禁止接收任何数据包,直到session建立完成
         cnxn.disableRecv();
         long sessionId = connReq.getSessionId();
+        // 已经拥有sessionId了,断接重连之类??
         if (sessionId != 0) {
             long clientSessionId = connReq.getSessionId();
             LOG.info("Client attempting to renew session 0x"
                     + Long.toHexString(clientSessionId)
                     + " at " + cnxn.getRemoteSocketAddress());
+            // 将旧的session数据移除
             serverCnxnFactory.closeSession(sessionId);
+            // 关联sessionId, 并加入到服务器内部表中
             cnxn.setSessionId(sessionId);
             reopenSession(cnxn, sessionId, passwd, sessionTimeout);
         } else {

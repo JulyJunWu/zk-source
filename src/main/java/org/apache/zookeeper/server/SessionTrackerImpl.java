@@ -40,11 +40,17 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class SessionTrackerImpl extends ZooKeeperCriticalThread implements SessionTracker {
     private static final Logger LOG = LoggerFactory.getLogger(SessionTrackerImpl.class);
-
+    /**
+     * sessionId -> session实现类
+     */
     HashMap<Long, SessionImpl> sessionsById = new HashMap<Long, SessionImpl>();
-
+    /**
+     * tickTime(真正含义是过期时间) -> session集合
+     */
     HashMap<Long, SessionSet> sessionSets = new HashMap<Long, SessionSet>();
-
+    /**
+     *  sessionId -> sessionTimeOut(客户端指定的过期时间)
+     */
     ConcurrentHashMap<Long, Integer> sessionsWithTimeout;
     long nextSessionId = 0;
     /**
@@ -183,6 +189,10 @@ public class SessionTrackerImpl extends ZooKeeperCriticalThread implements Sessi
         LOG.info("SessionTrackerImpl exited loop!");
     }
 
+    /**
+     *  1.将对应的session实现类与 sessionSets容器进行关联
+     *  2.重新设置过期时间(如果过期的话)
+     */
     synchronized public boolean touchSession(long sessionId, int timeout) {
         if (LOG.isTraceEnabled()) {
             ZooTrace.logTraceMessage(LOG,
@@ -196,20 +206,26 @@ public class SessionTrackerImpl extends ZooKeeperCriticalThread implements Sessi
             return false;
         }
         long expireTime = roundToInterval(Time.currentElapsedTime() + timeout);
+        // 如果未超时,说明不需要调整,直接返回即可
         if (s.tickTime >= expireTime) {
             // Nothing needs to be done
             return true;
         }
+        // 到这一步说明过期时间需要调整
         SessionSet set = sessionSets.get(s.tickTime);
         if (set != null) {
             set.sessions.remove(s);
         }
+        // 设置session的过期时间
         s.tickTime = expireTime;
+        // 重新获取对应的集合,因为数据已经改变了
         set = sessionSets.get(s.tickTime);
         if (set == null) {
+            // 创建对应的过期时间 -> 对应相同过期时间所有session集合
             set = new SessionSet();
             sessionSets.put(expireTime, set);
         }
+        // 将session关联到容器
         set.sessions.add(s);
         return true;
     }
@@ -266,10 +282,18 @@ public class SessionTrackerImpl extends ZooKeeperCriticalThread implements Sessi
         return nextSessionId++;
     }
 
+    /**
+     * 1.创建session
+     * 2.将session保存到对应的容器
+     * @param id
+     * @param sessionTimeout
+     */
     synchronized public void addSession(long id, int sessionTimeout) {
         sessionsWithTimeout.put(id, sessionTimeout);
         if (sessionsById.get(id) == null) {
+            // 创建session实现类
             SessionImpl s = new SessionImpl(id, sessionTimeout, 0);
+            // 保存到容器中
             sessionsById.put(id, s);
             if (LOG.isTraceEnabled()) {
                 ZooTrace.logTraceMessage(LOG, ZooTrace.SESSION_TRACE_MASK,
