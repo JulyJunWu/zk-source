@@ -80,6 +80,10 @@ public class NIOServerCnxn extends ServerCnxn {
 
     LinkedBlockingQueue<ByteBuffer> outgoingBuffers = new LinkedBlockingQueue<ByteBuffer>();
 
+    /**
+     *   服务器默认的最小session超时 <= 客户端的session超时时间 <= 服务器最大的session超时时间
+     *   客户端的数值只能位于此区间!
+     */
     int sessionTimeout;
 
     protected final ZooKeeperServer zkServer;
@@ -99,7 +103,9 @@ public class NIOServerCnxn extends ServerCnxn {
     long sessionId;
 
     static long nextSessionId = 1;
-
+    /**
+     * 最大的请求数量
+     */
     int outstandingLimit = 1;
 
     public NIOServerCnxn(ZooKeeperServer zk, SocketChannel sock,
@@ -432,6 +438,7 @@ public class NIOServerCnxn extends ServerCnxn {
             }
             synchronized (this.factory) {        
                 // check throttling
+                // 如果当前处理的请求数量 超过阈值,则暂停读取socket命令请求
                 if (zkServer.getInProcess() > outstandingLimit) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Throttling recv " + zkServer.getInProcess());
@@ -447,10 +454,17 @@ public class NIOServerCnxn extends ServerCnxn {
 
     }
 
+    /**
+     * 主要是考虑到某一刻处理的请求数量过多,故
+     * 暂时 停止接收 客户端的请求
+     */
     public void disableRecv() {
         sk.interestOps(sk.interestOps() & (~SelectionKey.OP_READ));
     }
 
+    /**
+     * 开始 接收客户端的请求
+     */
     public void enableRecv() {
         synchronized (this.factory) {
             sk.selector().wakeup();

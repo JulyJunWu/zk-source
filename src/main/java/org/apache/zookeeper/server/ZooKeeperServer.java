@@ -1005,10 +1005,12 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         int sessionTimeout = connReq.getTimeOut();
         byte passwd[] = connReq.getPasswd();
         int minSessionTimeout = getMinSessionTimeout();
+        // 如果客户端设置的session超时时间比服务器配置的最小过期时间还要小的话,直接使用服务器最小过期时间
         if (sessionTimeout < minSessionTimeout) {
             sessionTimeout = minSessionTimeout;
         }
         int maxSessionTimeout = getMaxSessionTimeout();
+        // 若客户端设置的session超时时间比服务器最大的过期时间还要大的话,直接使用服务器的最大超时时间
         if (sessionTimeout > maxSessionTimeout) {
             sessionTimeout = maxSessionTimeout;
         }

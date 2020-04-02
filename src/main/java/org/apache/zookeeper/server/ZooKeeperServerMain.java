@@ -52,7 +52,7 @@ public class ZooKeeperServerMain {
      *
      * @param args the configfile or the port datadir [ticktime]
      *
-     * 单机版入口
+     * 单机版启动入口
      */
     public static void main(String[] args) {
         ZooKeeperServerMain main = new ZooKeeperServerMain();
